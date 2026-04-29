@@ -9,7 +9,7 @@ const appState = {
   invoices: [],
   receipts: [],
   settings: {
-    companyName: 'NOWFiXiT',
+    companyName: 'Fixit Repair Express',
     companyAddress: 'Via Roma 123, 20100 Milano',
     companyPhone: '02-1234567',
     companyEmail: 'info@techrepair.it',
@@ -206,7 +206,7 @@ const app = {
   // Simple frontend-only auth (to be replaced with real backend auth later)
   credentials: {
     username: 'admin',
-    password: 'nowfixit!'
+    password: 'fixit!'
   },
 
   showAppShell() {
@@ -1785,9 +1785,9 @@ ACCESSORI;GLASS;;20,00 €;10 €`;
         <!-- HEADER -->
         <div class="invoice-header">
           <div>
-            <div class="invoice-company-name">NOWFiXiT</div>
+            <div class="invoice-company-name">Fixit Repair Express</div>
             <div class="invoice-company">
-              NOWFiXiT SRL<br>
+              Fixit Repair Express SRL<br>
               Via Roma 123<br>
               20100 Milano (MI)<br>
               Tel: 02-1234567 | Cell: 339-1234567<br>
@@ -2025,9 +2025,9 @@ ACCESSORI;GLASS;;20,00 €;10 €`;
       <div class="receipt-template">
         <!-- HEADER -->
         <div class="receipt-header">
-          <div class="receipt-logo">NOWFiXiT</div>
+          <div class="receipt-logo">Fixit Repair Express</div>
           <div class="receipt-company">
-            NOWFiXiT SRL<br>
+            Fixit Repair Express SRL<br>
             Via Roma 123, 20100 Milano<br>
             Tel: 02-1234567<br>
             Email: info@techrepair.it<br>
@@ -3093,7 +3093,7 @@ ACCESSORI;GLASS;;20,00 €;10 €`;
         <!-- HEADER -->
         <div class="wo-header">
           <div>
-            <div class="wo-logo">NOWFiXiT</div>
+            <div class="wo-logo">Fixit Repair Express</div>
             <div style="font-size: 10pt; color: #555;">Laboratorio Riparazioni Professionali</div>
           </div>
           <div class="wo-company-info">
@@ -4285,7 +4285,7 @@ ACCESSORI;GLASS;;20,00 €;10 €`;
 
 <div class="header-row">
   <div class="company-block">
-    <strong>${s.companyName || 'NOWFiXiT'}</strong><br>
+    <strong>${s.companyName || 'Fixit Repair Express'}</strong><br>
     ${s.companyAddress || ''}<br>
     Tel: ${s.companyPhone || ''}<br>
     P.IVA: ${s.companyVat || ''}
@@ -4332,7 +4332,7 @@ ACCESSORI;GLASS;;20,00 €;10 €`;
       <li>Il dispositivo è libero da vincoli, pegni, sequestri, finanziamenti non saldati o qualsiasi altro onere reale.</li>
       <li>Il dispositivo non risulta segnalato come rubato né è presente in blacklist IMEI.</li>
       <li>L'Activation Lock (FMI) è stato disattivato prima della consegna.</li>
-      <li>Il sottoscritto solleva ${s.companyName || 'NOWFiXiT'} da qualsiasi responsabilità derivante da false dichiarazioni rese in questo documento.</li>
+      <li>Il sottoscritto solleva ${s.companyName || 'Fixit Repair Express'} da qualsiasi responsabilità derivante da false dichiarazioni rese in questo documento.</li>
       <li>Il corrispettivo è stato ricevuto per intero in contanti / bonifico / altro al momento della firma.</li>
     </ol>
   </div>
@@ -4343,12 +4343,12 @@ ACCESSORI;GLASS;;20,00 €;10 €`;
     <div class="sig-line">Firma del Venditore</div>
   </div>
   <div class="sig-block">
-    <div class="sig-line">Firma dell'Acquirente (${s.companyName || 'NOWFiXiT'})</div>
+    <div class="sig-line">Firma dell'Acquirente (${s.companyName || 'Fixit Repair Express'})</div>
   </div>
 </div>
 
 <div class="footer">
-  Documento generato da ${s.companyName || 'NOWFiXiT'} &mdash; ${evaluation.numero} &mdash; ${dataStr}
+  Documento generato da ${s.companyName || 'Fixit Repair Express'} &mdash; ${evaluation.numero} &mdash; ${dataStr}
 </div>
 
 </body></html>`;

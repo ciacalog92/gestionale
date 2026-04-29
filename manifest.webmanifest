@@ -1,6 +1,6 @@
 {
-  "name": "NOWFiXiT - Gestionale Riparazioni",
-  "short_name": "NOWFiXiT",
+  "name": "Fixit Repair Express - Gestionale Riparazioni",
+  "short_name": "Fixit Repair",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#020617",

@@ -1,9 +1,10 @@
-const CACHE_NAME = 'nowfixit-cache-v1';
+const CACHE_NAME = 'fixit-repair-express-cache-v1';
 const ASSETS = [
   './',
   './index.html',
   './style.css',
   './app.js',
+  './logo.png',
   './favicon-32.png',
   './favicon-192.png',
   './favicon.png',
