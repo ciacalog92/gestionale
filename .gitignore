@@ -1,6 +1,9 @@
 # macOS
 .DS_Store
 
+# Logo
+!logo.jpg
+
 # Editor
 .vscode/
 .idea/
