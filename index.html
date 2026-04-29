@@ -1,0 +1,1615 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NOWFiXiT - Gestionale Riparazioni</title>
+    <!-- Favicon e icone app -->
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="favicon-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="favicon.png">
+    <link rel="apple-touch-icon" sizes="192x192" href="favicon-192.png">
+    <link rel="apple-touch-icon" sizes="512x512" href="favicon.png">
+
+    <!-- Google Fonts for modern typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <!-- Manifest per esperienza tipo app/PWA -->
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Login Page -->
+    <div id="login-page" class="login-page">
+        <div class="login-card">
+            <h1 class="logo" style="margin-bottom: 8px;">NOWFiXiT</h1>
+            <p class="login-subtitle">Accedi al gestionale riparazioni</p>
+            <form id="loginForm" class="login-form">
+                <div class="form-group">
+                    <label class="form-label">Utente</label>
+                    <input type="text" name="username" class="form-control" required placeholder="admin">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Password</label>
+                    <input type="password" name="password" class="form-control" required placeholder="••••••••">
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn--primary" style="width: 100%;">Accedi</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Header con menu hamburger -->
+    <header class="app-header" id="appHeader" style="display: none;">
+        <div class="header-inner">
+            <button class="hamburger-btn" id="hamburgerBtn" aria-label="Apri menu">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <div class="header-spacer"></div>
+            <button class="btn btn--primary btn--sm apps-bar-logout" onclick="app.logout()">Esci</button>
+        </div>
+    </header>
+
+    <!-- Menu applicazioni stile overlay semplice (solo elenco pagine) -->
+    <nav class="apps-menu" id="appsMenu" aria-hidden="true">
+        <div class="apps-menu__inner">
+            <div class="apps-menu__nav">
+                <a class="menu-link active" data-page="dashboard" href="#">Dashboard</a>
+                <a class="menu-link" data-page="orders" href="#">Riparazioni</a>
+                <a class="menu-link" data-page="clients" href="#">Clienti</a>
+                <a class="menu-link" data-page="refurbished" href="#">Shop Ricondizionati</a>
+                <a class="menu-link" data-page="iphone-price-list" href="#">Listino iPhone</a>
+                <a class="menu-link" data-page="evaluations" href="#">Valutazioni Usato</a>
+                <a class="menu-link" data-page="invoicing" href="#">Fatturazione</a>
+                <a class="menu-link" data-page="parts" href="#">Magazzino Ricambi</a>
+                <a class="menu-link" data-page="settings" href="#">Impostazioni</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content" id="mainContent" style="display: none;">
+        <!-- Dashboard Page -->
+        <div class="page" id="dashboard-page">
+            <div class="page-header">
+                <h2>Dashboard</h2>
+            </div>
+
+            <!-- Statistics Widgets -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: var(--color-bg-1);">📦</div>
+                    <div class="stat-content">
+                        <div class="stat-label">Totale Riparazioni</div>
+                        <div class="stat-value" id="statTotalOrders">0</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: var(--color-bg-3);">🔧</div>
+                    <div class="stat-content">
+                        <div class="stat-label">In Lavorazione</div>
+                        <div class="stat-value" id="statInProgress">0</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: var(--color-bg-6);">✅</div>
+                    <div class="stat-content">
+                        <div class="stat-label">Completati Oggi</div>
+                        <div class="stat-value" id="statCompletedToday">0</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: var(--color-bg-2);">💰</div>
+                    <div class="stat-content">
+                        <div class="stat-label">Fatturato Mese</div>
+                        <div class="stat-value" id="statMonthlyRevenue">€0</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: var(--color-bg-6);">📊</div>
+                    <div class="stat-content">
+                        <div class="stat-label">Incassi Oggi</div>
+                        <div class="stat-value" id="statTodayRevenue">€0</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: var(--color-bg-4);">⚠️</div>
+                    <div class="stat-content">
+                        <div class="stat-label">Fatture da Incassare</div>
+                        <div class="stat-value" id="statUnpaidInvoices">0</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: var(--color-bg-5);">📱</div>
+                    <div class="stat-content">
+                        <div class="stat-label">Ricondizionati Disponibili</div>
+                        <div class="stat-value" id="statRefurbishedAvailable">0</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: var(--color-bg-7);">💎</div>
+                    <div class="stat-content">
+                        <div class="stat-label">Valore Inventario</div>
+                        <div class="stat-value" id="statInventoryValue">€0</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: var(--color-bg-8);">⏳</div>
+                    <div class="stat-content">
+                        <div class="stat-label">Valutazioni in Attesa</div>
+                        <div class="stat-value" id="statPendingEvaluations">0</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: var(--color-bg-4);">📈</div>
+                    <div class="stat-content">
+                        <div class="stat-label">Dispositivi Acquistati</div>
+                        <div class="stat-value" id="statDevicesPurchased">0</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="quick-actions">
+                <button class="btn btn--primary" onclick="app.showPage('new-order')">
+                    ➕ Nuova Riparazione
+                </button>
+                <button class="btn btn--primary" onclick="app.showPage('orders')">
+                    🔍 Cerca Ordine
+                </button>
+                <button class="btn btn--primary" onclick="app.showPage('clients')">
+                    👥 Lista Clienti
+                </button>
+            </div>
+
+            <!-- Recent Orders -->
+            <div class="section-card">
+                <h3>Riparazioni Recenti</h3>
+                <div class="recent-orders" id="recentOrdersList"></div>
+            </div>
+        </div>
+
+        <!-- Orders Page -->
+        <div class="page" id="orders-page" style="display: none;">
+            <div class="page-header">
+                <button class="btn btn--primary btn--sm" onclick="app.showPage('dashboard')">← Indietro</button>
+                <h2>Gestione Riparazioni</h2>
+                <button class="btn btn--primary" onclick="app.showPage('new-order')">
+                    ➕ Nuova Riparazione
+                </button>
+            </div>
+
+            <!-- Filters -->
+            <div class="filters-bar">
+                <div class="filter-group">
+                    <label>Stato:</label>
+                    <select id="orderStatusFilter" class="form-control">
+                        <option value="">Tutti</option>
+                        <option value="Preventivo">Preventivo</option>
+                        <option value="In Attesa Approvazione">In Attesa Approvazione</option>
+                        <option value="In Lavorazione">In Lavorazione</option>
+                        <option value="In Attesa Ricambi">In Attesa Ricambi</option>
+                        <option value="Completato">Completato</option>
+                        <option value="Consegnato">Consegnato</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>Cerca:</label>
+                    <input type="text" id="orderSearchInput" class="form-control" placeholder="Nr. ordine o cliente...">
+                </div>
+            </div>
+
+            <!-- Orders Table -->
+            <div class="section-card">
+                <div class="table-responsive">
+                    <table class="orders-table" id="ordersTable">
+                        <thead>
+                            <tr>
+                                <th>Nr. Ordine</th>
+                                <th>Cliente</th>
+                                <th>Dispositivo</th>
+                                <th>Stato</th>
+                                <th>Data</th>
+                                <th>Azioni</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ordersTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- New Order Page -->
+        <div class="page" id="new-order-page" style="display: none;">
+            <div class="page-header">
+                <button class="btn btn--primary" onclick="app.showPage('orders')">
+                    ← Indietro
+                </button>
+                <h2>Nuova Riparazione</h2>
+            </div>
+
+            <!-- Progress Steps -->
+            <div class="steps-container">
+                <div class="step active" data-step="1">
+                    <div class="step-number">1</div>
+                    <div class="step-label">Dati Cliente</div>
+                </div>
+                <div class="step" data-step="2">
+                    <div class="step-number">2</div>
+                    <div class="step-label">Dispositivo</div>
+                </div>
+                <div class="step" data-step="3">
+                    <div class="step-number">3</div>
+                    <div class="step-label">Problema</div>
+                </div>
+                <div class="step" data-step="4">
+                    <div class="step-number">4</div>
+                    <div class="step-label">Riepilogo</div>
+                </div>
+            </div>
+
+            <!-- Form Steps -->
+            <form id="newOrderForm">
+                <!-- Step 1: Customer Data -->
+                <div class="form-step active" data-step="1">
+                    <div class="section-card">
+                        <h3>Dati Cliente</h3>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label class="form-label">Nome *</label>
+                                <input type="text" name="customerName" class="form-control" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Cognome *</label>
+                                <input type="text" name="customerSurname" class="form-control" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Telefono *</label>
+                                <input type="tel" name="customerPhone" class="form-control" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Email</label>
+                                <input type="email" name="customerEmail" class="form-control">
+                            </div>
+                            <div class="form-group full-width">
+                                <label class="form-label">Note Cliente</label>
+                                <textarea name="customerNotes" class="form-control" rows="3"></textarea>
+                            </div>
+                        </div>
+                        <div class="form-actions">
+                            <button type="button" class="btn btn--primary" onclick="app.nextStep()">Avanti</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 2: Device -->
+                <div class="form-step" data-step="2">
+                    <div class="section-card">
+                        <h3>Dispositivo</h3>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label class="form-label">Tipo Dispositivo *</label>
+                                <select name="deviceType" class="form-control" required>
+                                    <option value="">Seleziona...</option>
+                                    <option value="iPhone">iPhone</option>
+                                    <option value="iPad">iPad</option>
+                                    <option value="MacBook">MacBook</option>
+                                    <option value="Apple Watch">Apple Watch</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Modello *</label>
+                                <select name="deviceModel" class="form-control" required>
+                                    <option value="">Seleziona prima il tipo...</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Numero Seriale/IMEI</label>
+                                <input type="text" name="deviceSerial" class="form-control">
+                            </div>
+                            <div class="form-group full-width">
+                                <label class="form-label">Condizioni all'Arrivo</label>
+                                <textarea name="deviceCondition" class="form-control" rows="3"></textarea>
+                            </div>
+                            <div class="form-group full-width">
+                                <label class="form-label">Accessori Consegnati</label>
+                                <input type="text" name="accessories" class="form-control" placeholder="Es: Caricatore, Cover, Auricolari...">
+                            </div>
+                        </div>
+                        <div class="form-actions">
+                            <button type="button" class="btn btn--primary" onclick="app.prevStep()">Indietro</button>
+                            <button type="button" class="btn btn--primary" onclick="app.nextStep()">Avanti</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 3: Problem -->
+                <div class="form-step" data-step="3">
+                    <div class="section-card">
+                        <h3>Problema</h3>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label class="form-label">Categoria Problema *</label>
+                                <select name="problemCategory" class="form-control" required>
+                                    <option value="">Seleziona...</option>
+                                    <option value="Display rotto/schermo crepato">Display rotto/schermo crepato</option>
+                                    <option value="Batteria scarica/durata ridotta">Batteria scarica/durata ridotta</option>
+                                    <option value="Non si accende">Non si accende</option>
+                                    <option value="Fotocamera non funzionante">Fotocamera non funzionante</option>
+                                    <option value="Problema microfono/audio">Problema microfono/audio</option>
+                                    <option value="Non si ricarica">Non si ricarica</option>
+                                    <option value="Problemi Face ID/Touch ID">Problemi Face ID/Touch ID</option>
+                                    <option value="Vetro posteriore rotto">Vetro posteriore rotto</option>
+                                    <option value="Danni da liquidi">Danni da liquidi</option>
+                                    <option value="Altri problemi">Altri problemi</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Priorità *</label>
+                                <select name="priority" class="form-control" required>
+                                    <option value="Bassa">Bassa</option>
+                                    <option value="Media" selected>Media</option>
+                                    <option value="Alta">Alta</option>
+                                </select>
+                            </div>
+                            <div class="form-group full-width">
+                                <label class="form-label">Descrizione Problema *</label>
+                                <textarea name="problemDescription" class="form-control" rows="4" required></textarea>
+                            </div>
+                        </div>
+                        <div class="form-actions">
+                            <button type="button" class="btn btn--secondary" onclick="app.prevStep()">Indietro</button>
+                            <button type="button" class="btn btn--primary" onclick="app.nextStep()">Avanti</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 4: Summary -->
+                <div class="form-step" data-step="4">
+                    <div class="section-card">
+                        <h3>Riepilogo Ordine</h3>
+                        <div id="orderSummary"></div>
+                        <div class="form-actions">
+                            <button type="button" class="btn btn--primary" onclick="app.prevStep()">Indietro</button>
+                            <button type="submit" class="btn btn--primary">Crea Ordine</button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Order Detail Page -->
+        <div class="page" id="order-detail-page" style="display: none;">
+            <div class="page-header">
+                <div>
+                    <button class="btn btn--primary" onclick="app.showPage('orders')">
+                        ← Indietro
+                    </button>
+                    <h2 id="orderDetailTitle"></h2>
+                </div>
+                <div class="header-actions">
+                    <button class="btn btn--primary" onclick="app.createInvoiceFromOrder()">
+                        📄 Crea Fattura
+                    </button>
+                    <button class="btn btn--primary" onclick="app.createReceiptFromOrder()">
+                        🧾 Emetti Scontrino
+                    </button>
+                    <button class="btn btn--primary" onclick="app.printWorkOrder()">
+                        🖨️ Stampa Scheda
+                    </button>
+                    <button class="btn btn--primary" onclick="app.deleteOrder()" style="color: var(--color-error);">
+                        🗑️ Elimina
+                    </button>
+                </div>
+            </div>
+
+            <div class="detail-grid">
+                <!-- Order Info -->
+                <div class="section-card">
+                    <h3>Informazioni Ordine</h3>
+                    <div id="orderDetailInfo"></div>
+                </div>
+
+                <!-- Timeline -->
+                <div class="section-card">
+                    <h3>Timeline Stati</h3>
+                    <div id="orderTimeline"></div>
+                </div>
+
+                <!-- Customer Info -->
+                <div class="section-card">
+                    <h3>Dati Cliente</h3>
+                    <div id="orderCustomerInfo"></div>
+                </div>
+
+                <!-- Device Info -->
+                <div class="section-card">
+                    <h3>Dispositivo</h3>
+                    <div id="orderDeviceInfo"></div>
+                </div>
+
+                <!-- Quote Section -->
+                <div class="section-card full-width">
+                    <h3>Preventivo</h3>
+                    <div id="orderQuote"></div>
+                </div>
+
+                <!-- Internal Notes -->
+                <div class="section-card full-width">
+                    <h3>Note Interne</h3>
+                    <textarea id="internalNotes" class="form-control" rows="4" placeholder="Note per i tecnici..."></textarea>
+                    <button class="btn btn--primary" style="margin-top: 12px;" onclick="app.saveInternalNotes()">Salva Note</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Clients Page -->
+        <div class="page" id="clients-page" style="display: none;">
+            <div class="page-header">
+                <button class="btn btn--primary" onclick="app.showPage('dashboard')">
+                    ← Indietro
+                </button>
+                <h2>Gestione Clienti</h2>
+            </div>
+
+            <!-- Search -->
+            <div class="filters-bar">
+                <div class="filter-group">
+                    <label>Cerca:</label>
+                    <input type="text" id="clientSearchInput" class="form-control" placeholder="Nome, cognome o telefono...">
+                </div>
+            </div>
+
+            <!-- Clients List -->
+            <div class="clients-grid" id="clientsList"></div>
+        </div>
+
+        <!-- Refurbished Shop Page -->
+        <div class="page" id="refurbished-page" style="display: none;">
+            <div class="page-header">
+                <button class="btn btn--primary" onclick="app.showPage('dashboard')">
+                    ← Indietro
+                </button>
+                <h2>Shop Ricondizionati</h2>
+                <button class="btn btn--primary" onclick="app.showAddRefurbishedModal()">
+                    ➕ Aggiungi Dispositivo
+                </button>
+            </div>
+
+            <!-- Filters -->
+            <div class="filters-bar">
+                <div class="filter-group">
+                    <label>Tipo:</label>
+                    <select id="refurbishedTypeFilter" class="form-control">
+                        <option value="">Tutti</option>
+                        <option value="iPhone">iPhone</option>
+                        <option value="iPad">iPad</option>
+                        <option value="MacBook">MacBook</option>
+                        <option value="Apple Watch">Apple Watch</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>Grado:</label>
+                    <select id="refurbishedGradeFilter" class="form-control">
+                        <option value="">Tutti</option>
+                        <option value="A+">A+</option>
+                        <option value="A">A</option>
+                        <option value="B">B</option>
+                        <option value="C">C</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>Stato:</label>
+                    <select id="refurbishedStatusFilter" class="form-control">
+                        <option value="">Tutti</option>
+                        <option value="Disponibile">Disponibile</option>
+                        <option value="Riservato">Riservato</option>
+                        <option value="Venduto">Venduto</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>Cerca:</label>
+                    <input type="text" id="refurbishedSearchInput" class="form-control" placeholder="Modello o seriale...">
+                </div>
+            </div>
+
+            <!-- Devices Grid -->
+            <div class="refurbished-grid" id="refurbishedGrid"></div>
+        </div>
+
+        <!-- Evaluations Page -->
+        <div class="page" id="evaluations-page" style="display: none;">
+            <div class="page-header">
+                <button class="btn btn--primary btn--sm" onclick="app.showPage('dashboard')">
+                    ← Indietro
+                </button>
+                <h2>Valutazioni Usato</h2>
+                <button class="btn btn--primary" onclick="app.startNewEvaluation()">
+                    ➕ Nuova Valutazione
+                </button>
+            </div>
+
+            <!-- Filters -->
+            <div class="filters-bar">
+                <div class="filter-group">
+                    <label>Stato:</label>
+                    <select id="evaluationStatusFilter" class="form-control">
+                        <option value="">Tutte</option>
+                        <option value="In Attesa">In Attesa</option>
+                        <option value="Accettata">Accettata</option>
+                        <option value="Rifiutata">Rifiutata</option>
+                        <option value="Completata">Completata</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>Cerca:</label>
+                    <input type="text" id="evaluationSearchInput" class="form-control" placeholder="Nr. valutazione o cliente...">
+                </div>
+            </div>
+
+            <!-- Evaluations Table -->
+            <div class="section-card">
+                <div class="table-responsive">
+                    <table class="orders-table">
+                        <thead>
+                            <tr>
+                                <th>Nr. Valutazione</th>
+                                <th>Data</th>
+                                <th>Cliente</th>
+                                <th>Dispositivo</th>
+                                <th>Prezzo Offerto</th>
+                                <th>Stato</th>
+                                <th>Azioni</th>
+                            </tr>
+                        </thead>
+                        <tbody id="evaluationsTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- New Evaluation Page -->
+        <div class="page" id="new-evaluation-page" style="display: none;">
+            <div class="page-header">
+                <button class="btn btn--primary btn--sm" onclick="app.showPage('evaluations')">
+                    ← Indietro
+                </button>
+                <h2>Nuova Valutazione</h2>
+            </div>
+
+            <!-- Progress Steps (3 step) -->
+            <div class="steps-container" id="evaluationSteps">
+                <div class="step active" data-step="1">
+                    <div class="step-number">1</div>
+                    <div class="step-label">Diagnosi componenti</div>
+                </div>
+                <div class="step" data-step="2">
+                    <div class="step-number">2</div>
+                    <div class="step-label">Estetica & Accessori</div>
+                </div>
+                <div class="step" data-step="3">
+                    <div class="step-number">3</div>
+                    <div class="step-label">Prezzo & Cliente</div>
+                </div>
+            </div>
+
+            <form id="evaluationForm">
+                <!-- Step 1: Diagnosi tecnica -->
+                <div class="form-step active" data-step="1">
+                    <div class="section-card">
+                        <h3>Dispositivo</h3>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label class="form-label">Tipo Dispositivo *</label>
+                                <select name="evalDeviceType" class="form-control" required onchange="app.updateEvalModels(this.value)">
+                                    <option value="">Seleziona...</option>
+                                    <option value="iPhone">iPhone</option>
+                                    <option value="iPad">iPad</option>
+                                    <option value="MacBook">MacBook</option>
+                                    <option value="Apple Watch">Apple Watch</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Modello *</label>
+                                <select name="evalDeviceModel" class="form-control" required>
+                                    <option value="">Seleziona prima il tipo...</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Capacità *</label>
+                                <select name="evalDeviceCapacity" class="form-control" required>
+                                    <option value="">Seleziona...</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Numero Seriale/IMEI *</label>
+                                <input type="text" name="evalDeviceSerial" class="form-control" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Colore</label>
+                                <input type="text" name="evalDeviceColor" class="form-control" placeholder="es. Nero">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="section-card">
+                        <h3>Batteria</h3>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label class="form-label">Salute batteria (%) *</label>
+                                <input type="number" name="evalBatteriaSalute" class="form-control" min="0" max="100" placeholder="es. 87" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Cicli batteria (opzionale)</label>
+                                <input type="number" name="evalCicliBatteria" class="form-control" min="0" placeholder="es. 450">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="section-card">
+                        <h3>Diagnosi funzionale</h3>
+
+                        <div class="yn-question-list">
+
+                            <div class="yn-question">
+                                <span class="yn-label">Face ID / Touch ID funziona?</span>
+                                <input type="hidden" name="evalFaceIdOk" value="1">
+                                <div class="yn-cards" data-choice-group="evalFaceIdOk">
+                                    <div class="choice-card yn-card yn-card--yes selected" data-value="1">Sì</div>
+                                    <div class="choice-card yn-card yn-card--no" data-value="0">No</div>
+                                </div>
+                            </div>
+
+                            <div class="yn-question">
+                                <span class="yn-label">True Tone funziona?</span>
+                                <input type="hidden" name="evalTrueToneOk" value="1">
+                                <div class="yn-cards" data-choice-group="evalTrueToneOk">
+                                    <div class="choice-card yn-card yn-card--yes selected" data-value="1">Sì</div>
+                                    <div class="choice-card yn-card yn-card--no" data-value="0">No</div>
+                                </div>
+                            </div>
+
+                            <div class="yn-question">
+                                <span class="yn-label">Display originale (nessun warning parti)?</span>
+                                <input type="hidden" name="evalDisplayOriginale" value="1">
+                                <div class="yn-cards" data-choice-group="evalDisplayOriginale">
+                                    <div class="choice-card yn-card yn-card--yes selected" data-value="1">Sì</div>
+                                    <div class="choice-card yn-card yn-card--no" data-value="0">No</div>
+                                </div>
+                            </div>
+
+                            <div class="yn-question">
+                                <span class="yn-label">Touch / schermo risponde correttamente?</span>
+                                <input type="hidden" name="evalTouchOk" value="1">
+                                <div class="yn-cards" data-choice-group="evalTouchOk">
+                                    <div class="choice-card yn-card yn-card--yes selected" data-value="1">Sì</div>
+                                    <div class="choice-card yn-card yn-card--no" data-value="0">No</div>
+                                </div>
+                            </div>
+
+                            <div class="yn-question">
+                                <span class="yn-label">Fotocamere funzionano?</span>
+                                <input type="hidden" name="evalFotocamereOk" value="1">
+                                <div class="yn-cards" data-choice-group="evalFotocamereOk">
+                                    <div class="choice-card yn-card yn-card--yes selected" data-value="1">Sì</div>
+                                    <div class="choice-card yn-card yn-card--no" data-value="0">No</div>
+                                </div>
+                            </div>
+
+                            <div class="yn-question">
+                                <span class="yn-label">Ricarica funziona?</span>
+                                <input type="hidden" name="evalRicaricaOk" value="1">
+                                <div class="yn-cards" data-choice-group="evalRicaricaOk">
+                                    <div class="choice-card yn-card yn-card--yes selected" data-value="1">Sì</div>
+                                    <div class="choice-card yn-card yn-card--no" data-value="0">No</div>
+                                </div>
+                            </div>
+
+                            <div class="yn-question">
+                                <span class="yn-label">Audio / altoparlanti funzionano?</span>
+                                <input type="hidden" name="evalAudioOk" value="1">
+                                <div class="yn-cards" data-choice-group="evalAudioOk">
+                                    <div class="choice-card yn-card yn-card--yes selected" data-value="1">Sì</div>
+                                    <div class="choice-card yn-card yn-card--no" data-value="0">No</div>
+                                </div>
+                            </div>
+
+                            <div class="yn-question">
+                                <span class="yn-label">Microfono funziona?</span>
+                                <input type="hidden" name="evalMicrofonoOk" value="1">
+                                <div class="yn-cards" data-choice-group="evalMicrofonoOk">
+                                    <div class="choice-card yn-card yn-card--yes selected" data-value="1">Sì</div>
+                                    <div class="choice-card yn-card yn-card--no" data-value="0">No</div>
+                                </div>
+                            </div>
+
+                            <div class="yn-question">
+                                <span class="yn-label">Rete / SIM / Baseband funziona?</span>
+                                <input type="hidden" name="evalReteOk" value="1">
+                                <div class="yn-cards" data-choice-group="evalReteOk">
+                                    <div class="choice-card yn-card yn-card--yes selected" data-value="1">Sì</div>
+                                    <div class="choice-card yn-card yn-card--no" data-value="0">No</div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+
+                    <div class="section-card">
+                        <h3>Controlli amministrativi</h3>
+
+                        <div class="yn-question-list">
+
+                            <div class="yn-question">
+                                <span class="yn-label">IMEI risulta in blacklist?</span>
+                                <input type="hidden" name="evalImeiBlacklist" value="0">
+                                <div class="yn-cards" data-choice-group="evalImeiBlacklist">
+                                    <div class="choice-card yn-card yn-card--yes" data-value="1">Sì</div>
+                                    <div class="choice-card yn-card yn-card--no selected" data-value="0">No</div>
+                                </div>
+                            </div>
+
+                            <div class="yn-question">
+                                <span class="yn-label">Activation Lock è attivo?</span>
+                                <input type="hidden" name="evalActivationLock" value="0">
+                                <div class="yn-cards" data-choice-group="evalActivationLock">
+                                    <div class="choice-card yn-card yn-card--yes" data-value="1">Sì</div>
+                                    <div class="choice-card yn-card yn-card--no selected" data-value="0">No</div>
+                                </div>
+                            </div>
+
+                            <div class="yn-question">
+                                <span class="yn-label">Sono presenti rate o finanziamenti non saldati?</span>
+                                <input type="hidden" name="evalRateNonPagate" value="0">
+                                <div class="yn-cards" data-choice-group="evalRateNonPagate">
+                                    <div class="choice-card yn-card yn-card--yes" data-value="1">Sì</div>
+                                    <div class="choice-card yn-card yn-card--no selected" data-value="0">No</div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+
+                    <div class="section-card">
+                        <h3>Modalità valutazione</h3>
+                        <input type="hidden" name="evalModalitaValutazione" value="RITIRO">
+                        <div class="choice-grid" data-choice-group="evalModalitaValutazione">
+                            <div class="choice-card selected" data-value="RITIRO">
+                                <div class="choice-card-title">Ritiro dispositivo</div>
+                                <div class="choice-card-desc">Acquisto per rivendita ricondizionato</div>
+                            </div>
+                            <div class="choice-card" data-value="RICAMBI">
+                                <div class="choice-card-title">Solo ricambi</div>
+                                <div class="choice-card-desc">Dispositivo destinato a cannibalizzazione</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="section-card">
+                        <h3>Parametri economici</h3>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label class="form-label">Costo ripristino stimato (€)</label>
+                                <input type="number" name="evalCostoRipristino" class="form-control" min="0" step="0.01" value="0">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Margine minimo desiderato (€)</label>
+                                <input type="number" name="evalMargineMinimo" class="form-control" min="0" step="0.01" value="30">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn btn--primary" onclick="app.nextEvalStep()">Avanti →</button>
+                    </div>
+                </div>
+
+                <!-- Step 2: Estetica & accessori -->
+                <div class="form-step" data-step="2">
+                    <div class="section-card">
+                        <h3>Estetica e accessori</h3>
+                        <div class="form-grid">
+                            <div class="form-group full-width">
+                                <label class="form-label">Stato estetico scocca *</label>
+                                <input type="hidden" name="evalAestheticOverall" value="like_new">
+                                <div class="choice-grid" data-choice-group="evalAestheticOverall">
+                                    <div class="choice-card selected" data-value="like_new">
+                                        <div class="choice-card-title">Come nuovo</div>
+                                        <div class="choice-card-desc">Nessun graffio visibile</div>
+                                    </div>
+                                    <div class="choice-card" data-value="good">
+                                        <div class="choice-card-title">Normali segni d'uso</div>
+                                        <div class="choice-card-desc">Piccoli segni superficiali</div>
+                                    </div>
+                                    <div class="choice-card" data-value="used">
+                                        <div class="choice-card-title">Usato</div>
+                                        <div class="choice-card-desc">Graffi / ammaccature evidenti</div>
+                                    </div>
+                                    <div class="choice-card" data-value="heavily_used">
+                                        <div class="choice-card-title">Molto danneggiata</div>
+                                        <div class="choice-card-desc">Scocca molto segnata o deformata</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-group full-width">
+                                <label class="form-label">Vetro posteriore (se presente)</label>
+                                <input type="hidden" name="evalBackGlass" value="perfect">
+                                <div class="choice-grid" data-choice-group="evalBackGlass">
+                                    <div class="choice-card selected" data-value="perfect">
+                                        <div class="choice-card-title">Integro</div>
+                                        <div class="choice-card-desc">Nessuna crepa o rottura</div>
+                                    </div>
+                                    <div class="choice-card" data-value="light_scratches">
+                                        <div class="choice-card-title">Graffi</div>
+                                        <div class="choice-card-desc">Solo segni superficiali</div>
+                                    </div>
+                                    <div class="choice-card" data-value="cracks_or_lines">
+                                        <div class="choice-card-title">Crepe / rotture</div>
+                                        <div class="choice-card-desc">Rotture visibili o vetro danneggiato</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-group full-width">
+                                <label class="form-label">Accessori presenti *</label>
+                                <input type="hidden" name="evalAccessoriesOverall" value="full_kit">
+                                <div class="choice-grid" data-choice-group="evalAccessoriesOverall">
+                                    <div class="choice-card selected" data-value="full_kit">
+                                        <div class="choice-card-title">Kit completo</div>
+                                        <div class="choice-card-desc">Scatola + caricatore + cavo</div>
+                                    </div>
+                                    <div class="choice-card" data-value="partial_kit">
+                                        <div class="choice-card-title">Parziale</div>
+                                        <div class="choice-card-desc">Solo caricatore o solo cavo</div>
+                                    </div>
+                                    <div class="choice-card" data-value="device_only">
+                                        <div class="choice-card-title">Solo dispositivo</div>
+                                        <div class="choice-card-desc">Nessun accessorio incluso</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-group full-width">
+                                <label class="form-label">Garanzia Apple residua</label>
+                                <input type="hidden" name="evalWarranty" value="no_warranty">
+                                <div class="choice-grid" data-choice-group="evalWarranty">
+                                    <div class="choice-card selected" data-value="no_warranty">
+                                        <div class="choice-card-title">Nessuna garanzia</div>
+                                        <div class="choice-card-desc">Garanzia Apple scaduta o assente</div>
+                                    </div>
+                                    <div class="choice-card" data-value="with_warranty">
+                                        <div class="choice-card-title">Garanzia residua</div>
+                                        <div class="choice-card-desc">Ancora coperto da garanzia Apple</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-group full-width">
+                                <label class="form-label">Note tecniche</label>
+                                <textarea name="evalNotes" class="form-control" rows="3"></textarea>
+                            </div>
+                        </div>
+                        <div class="form-actions">
+                            <button type="button" class="btn btn--secondary" onclick="app.prevEvalStep()">Indietro</button>
+                            <button type="button" class="btn btn--primary" onclick="app.nextEvalStep()">Avanti</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step 3: Prezzo & dati cliente -->
+                <div class="form-step" data-step="3">
+                    <div class="section-card">
+                        <h3>Calcolo valutazione</h3>
+                        <div id="evaluationCalculation"></div>
+                        <div class="form-group">
+                            <label class="form-label">Aggiustamento manuale (±20%)</label>
+                            <input type="range" id="priceAdjustment" class="form-control" min="-20" max="20" value="0" step="1" oninput="app.updateEvaluationPrice()">
+                            <div style="text-align: center; margin-top: 8px;">
+                                <span id="adjustmentValue">0%</span>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Cifra offerta al cliente (€) *</label>
+                            <input type="number" name="evalPrezzoOfferto" id="evalPrezzoOfferto" class="form-control" min="0" step="1" placeholder="Inserisci la cifra da offrire" required>
+                            <small class="form-hint">Puoi modificare liberamente la cifra calcolata</small>
+                        </div>
+                        <h3>Dati cliente</h3>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label class="form-label">Nome *</label>
+                                <input type="text" name="evalCustomerName" class="form-control" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Cognome *</label>
+                                <input type="text" name="evalCustomerSurname" class="form-control" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Telefono *</label>
+                                <input type="tel" name="evalCustomerPhone" class="form-control" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Email</label>
+                                <input type="email" name="evalCustomerEmail" class="form-control">
+                            </div>
+                        </div>
+                        <div class="section-card" style="margin-top:16px;">
+                            <h3>Documento identità venditore</h3>
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label class="form-label">Tipo documento *</label>
+                                    <select name="evalDocTipo" class="form-control">
+                                        <option value="Carta d'identità">Carta d'identità</option>
+                                        <option value="Passaporto">Passaporto</option>
+                                        <option value="Patente">Patente</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Numero documento *</label>
+                                    <input type="text" name="evalDocNumero" class="form-control" placeholder="es. CA00000AA">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Rilasciato da</label>
+                                    <input type="text" name="evalDocRilasciatoDa" class="form-control" placeholder="es. Comune di Milano">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Data di nascita venditore</label>
+                                    <input type="date" name="evalVenditoreNascita" class="form-control">
+                                </div>
+                                <div class="form-group full-width">
+                                    <label class="form-label">Indirizzo venditore</label>
+                                    <input type="text" name="evalVenditoreIndirizzo" class="form-control" placeholder="es. Via Roma 1, Milano">
+                                </div>
+                            </div>
+                        </div>
+                        <h3>Riepilogo valutazione</h3>
+                        <div id="evaluationSummary"></div>
+                        <div class="form-actions">
+                            <button type="button" class="btn btn--secondary" onclick="app.prevEvalStep()">Indietro</button>
+                            <button type="submit" class="btn btn--primary">💾 Salva &amp; Genera Dichiarazione</button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Invoicing Page -->
+        <div class="page" id="invoicing-page" style="display: none;">
+            <div class="page-header">
+                <button class="btn btn--ghost btn--sm" onclick="app.showPage('dashboard')">← Indietro</button>
+                <h2>Fatturazione</h2>
+            </div>
+
+            <div class="quick-actions">
+                <button class="btn btn--primary" onclick="app.showPage('new-invoice')">
+                    📄 Nuova Fattura
+                </button>
+                <button class="btn btn--primary" onclick="app.showPage('new-receipt')">
+                    🧾 Nuovo Scontrino
+                </button>
+                <button class="btn btn--secondary" onclick="app.showPage('vat-registers')">
+                    📊 Registri IVA
+                </button>
+            </div>
+
+            <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom: 24px;">
+                <div class="stat-card">
+                    <div class="stat-content">
+                        <div class="stat-label">Fatture Mese</div>
+                        <div class="stat-value" id="invoicesThisMonth">0</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-content">
+                        <div class="stat-label">Scontrini Oggi</div>
+                        <div class="stat-value" id="receiptsToday">0</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-content">
+                        <div class="stat-label">Da Incassare</div>
+                        <div class="stat-value" style="color: var(--color-error);" id="totalUnpaid">€0</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section-card">
+                <h3>Fatture Recenti</h3>
+                <div class="filters-bar">
+                    <div class="filter-group">
+                        <label>Stato:</label>
+                        <select id="invoiceStatusFilter" class="form-control">
+                            <option value="">Tutte</option>
+                            <option value="Pagata">Pagata</option>
+                            <option value="Non Pagata">Non Pagata</option>
+                            <option value="Parzialmente Pagata">Parzialmente Pagata</option>
+                            <option value="Scaduta">Scaduta</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="orders-table">
+                        <thead>
+                            <tr>
+                                <th>Nr. Fattura</th>
+                                <th>Data</th>
+                                <th>Cliente</th>
+                                <th>Imponibile</th>
+                                <th>IVA</th>
+                                <th>Totale</th>
+                                <th>Stato</th>
+                                <th>Azioni</th>
+                            </tr>
+                        </thead>
+                        <tbody id="invoicesTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="section-card">
+                <h3>Scontrini Recenti</h3>
+                <div class="table-responsive">
+                    <table class="orders-table">
+                        <thead>
+                            <tr>
+                                <th>Nr. Scontrino</th>
+                                <th>Data/Ora</th>
+                                <th>Totale</th>
+                                <th>Pagamento</th>
+                                <th>Azioni</th>
+                            </tr>
+                        </thead>
+                        <tbody id="receiptsTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- New Invoice Page -->
+        <div class="page" id="new-invoice-page" style="display: none;">
+            <div class="page-header">
+                <button class="btn btn--ghost btn--sm" onclick="app.showPage('invoicing')">
+                    ← Indietro
+                </button>
+                <h2>Nuova Fattura</h2>
+            </div>
+            <form id="newInvoiceForm">
+                <div class="section-card">
+                    <h3>Intestazione</h3>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Tipo Documento *</label>
+                            <select name="invoiceType" class="form-control" required>
+                                <option value="Fattura">Fattura</option>
+                                <option value="Fattura Proforma">Fattura Proforma</option>
+                                <option value="Nota di Credito">Nota di Credito</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Data Emissione *</label>
+                            <input type="date" name="invoiceDate" class="form-control" required>
+                        </div>
+                        <div class="form-group full-width">
+                            <label class="form-label">Cliente *</label>
+                            <select name="invoiceClient" class="form-control" id="invoiceClientSelect" required>
+                                <option value="">Seleziona cliente...</option>
+                                <option value="new">+ Nuovo Cliente</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="newClientFields" style="display: none;">
+                        <h4 style="margin: 20px 0 16px;">Dati Cliente</h4>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label class="form-label">Nome/Ragione Sociale *</label>
+                                <input type="text" name="clientName" class="form-control">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Indirizzo *</label>
+                                <input type="text" name="clientAddress" class="form-control">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">CAP *</label>
+                                <input type="text" name="clientCAP" class="form-control" maxlength="5">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Città *</label>
+                                <input type="text" name="clientCity" class="form-control">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Provincia *</label>
+                                <input type="text" name="clientProvince" class="form-control" maxlength="2">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Codice Fiscale</label>
+                                <input type="text" name="clientCF" class="form-control" maxlength="16">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Partita IVA</label>
+                                <input type="text" name="clientPIVA" class="form-control" maxlength="11">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Codice SDI / PEC</label>
+                                <input type="text" name="clientSDI" class="form-control">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section-card">
+                    <h3>Articoli/Servizi</h3>
+                    <div id="invoiceItemsContainer"></div>
+                    <div style="display: flex; gap: 12px; margin-top: 16px;">
+                        <button type="button" class="btn btn--secondary" onclick="app.addInvoiceItem()">
+                            ➕ Aggiungi Riga
+                        </button>
+                        <button type="button" class="btn btn--outline" onclick="app.importFromOrder()">
+                            📋 Importa da Ordine
+                        </button>
+                    </div>
+                </div>
+
+                <div class="section-card">
+                    <h3>Riepilogo e Pagamento</h3>
+                    <div class="quote-totals" style="margin-bottom: 24px;">
+                        <div class="total-row">
+                            <span>Imponibile:</span>
+                            <span id="invoiceSubtotal">€0.00</span>
+                        </div>
+                        <div class="total-row">
+                            <span>IVA:</span>
+                            <span id="invoiceVAT">€0.00</span>
+                        </div>
+                        <div class="total-row grand-total">
+                            <span>TOTALE:</span>
+                            <span id="invoiceTotal">€0.00</span>
+                        </div>
+                    </div>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Metodo Pagamento *</label>
+                            <select name="paymentMethod" class="form-control" required>
+                                <option value="Contanti">Contanti</option>
+                                <option value="Carta di Credito/Debito">Carta di Credito/Debito</option>
+                                <option value="Bonifico Bancario">Bonifico Bancario</option>
+                                <option value="PayPal">PayPal</option>
+                                <option value="Satispay">Satispay</option>
+                                <option value="Altro">Altro</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Stato Pagamento *</label>
+                            <select name="paymentStatus" class="form-control" required>
+                                <option value="Non Pagata">Non Pagata</option>
+                                <option value="Parzialmente Pagata">Parzialmente Pagata</option>
+                                <option value="Pagata">Pagata</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Scadenza Pagamento</label>
+                            <input type="date" name="dueDate" class="form-control">
+                        </div>
+                        <div class="form-group full-width">
+                            <label class="form-label">Note</label>
+                            <textarea name="invoiceNotes" class="form-control" rows="3"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn--secondary" onclick="app.showPage('invoicing')">Annulla</button>
+                    <button type="submit" class="btn btn--primary">Emetti Fattura</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- New Receipt Page -->
+        <div class="page" id="new-receipt-page" style="display: none;">
+            <div class="page-header">
+                <button class="btn btn--ghost btn--sm" onclick="app.showPage('invoicing')">
+                    ← Indietro
+                </button>
+                <h2>Nuovo Scontrino Fiscale</h2>
+            </div>
+            <form id="newReceiptForm">
+                <div class="section-card">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Cliente (opzionale)</label>
+                            <input type="text" name="receiptClient" class="form-control" placeholder="Nome cliente per tracciabilità...">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section-card">
+                    <h3>Articoli</h3>
+                    <div id="receiptItemsContainer"></div>
+                    <button type="button" class="btn btn--secondary" onclick="app.addReceiptItem()" style="margin-top: 16px;">
+                        ➕ Aggiungi Articolo
+                    </button>
+                </div>
+
+                <div class="section-card">
+                    <div class="quote-totals" style="margin-bottom: 24px;">
+                        <div class="total-row grand-total">
+                            <span>TOTALE:</span>
+                            <span id="receiptTotal">€0.00</span>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Metodo Pagamento *</label>
+                        <select name="receiptPaymentMethod" class="form-control" required>
+                            <option value="Contanti">Contanti</option>
+                            <option value="Carta di Credito/Debito">Carta di Credito/Debito</option>
+                            <option value="Altro">Altro</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn--secondary" onclick="app.showPage('invoicing')">Annulla</button>
+                    <button type="submit" class="btn btn--primary">Emetti Scontrino</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- VAT Registers Page -->
+        <div class="page" id="vat-registers-page" style="display: none;">
+            <div class="page-header">
+                <button class="btn btn--ghost btn--sm" onclick="app.showPage('invoicing')">
+                    ← Indietro
+                </button>
+                <h2>Registri IVA</h2>
+            </div>
+
+            <div class="section-card">
+                <h3>Registro Vendite</h3>
+                <div class="filters-bar">
+                    <div class="filter-group">
+                        <label>Periodo:</label>
+                        <select id="vatPeriodFilter" class="form-control">
+                            <option value="month">Mese Corrente</option>
+                            <option value="quarter">Trimestre Corrente</option>
+                            <option value="year">Anno Corrente</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="vatRegisterContent"></div>
+            </div>
+        </div>
+
+        <!-- Settings Page -->
+        <div class="page" id="settings-page" style="display: none;">
+            <div class="page-header">
+                <button class="btn btn--ghost btn--sm" onclick="app.showPage('dashboard')">
+                    ← Indietro
+                </button>
+                <h2>Impostazioni</h2>
+            </div>
+
+            <!-- Company Settings -->
+            <div class="section-card">
+                <h3>Dati Azienda</h3>
+                <form id="companySettingsForm">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Nome Azienda</label>
+                            <input type="text" name="companyName" class="form-control" value="NOWFiXiT">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Partita IVA</label>
+                            <input type="text" name="companyVat" class="form-control" value="IT12345678901">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Indirizzo</label>
+                            <input type="text" name="companyAddress" class="form-control" value="Via Roma 123, 20100 Milano">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Telefono</label>
+                            <input type="tel" name="companyPhone" class="form-control" value="02-1234567">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Email</label>
+                            <input type="email" name="companyEmail" class="form-control" value="info@techrepair.it">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Costo Orario Manodopera (€)</label>
+                            <input type="number" name="laborCost" class="form-control" value="35" min="0">
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn--primary">Salva Impostazioni</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Parts / Warehouse Page -->
+        <div class="page" id="parts-page" style="display: none;">
+            <div class="page-header">
+                <button class="btn btn--secondary" onclick="app.showPage('dashboard')">
+                    ← Indietro
+                </button>
+                <h2>Magazzino Ricambi</h2>
+                <button class="btn btn--primary" onclick="app.showAddPartModal()">
+                    ➕ Aggiungi Ricambio
+                </button>
+            </div>
+
+            <div class="parts-catalog-container">
+                <div class="catalog-header">
+                    <h2 class="catalog-title">📦 Catalogo Ricambi</h2>
+                    <div class="catalog-controls">
+                        <div class="model-selector">
+                            <label for="partsModelFilter">Modello:</label>
+                            <select id="partsModelFilter" class="form-control">
+                                <option value="">Tutti i modelli</option>
+                            </select>
+                        </div>
+                        <button class="btn btn--primary" onclick="app.showAddPartModal()">
+                            ➕ Aggiungi Ricambio
+                        </button>
+                    </div>
+                </div>
+                <div class="catalog-content" id="partsCatalogContent">
+                    <!-- Content will be dynamically generated -->
+                </div>
+                <div class="catalog-footer" id="partsCatalogFooter">
+                    <!-- Stats will be dynamically generated -->
+                </div>
+            </div>
+        </div>
+
+        <!-- iPhone Repair Price List Page -->
+        <div class="page" id="iphone-price-list-page" style="display: none;">
+            <div class="page-header">
+                <button class="btn btn--ghost btn--sm" onclick="app.showPage('dashboard')">← Indietro</button>
+                <h2>Listino Riparazioni iPhone</h2>
+            </div>
+
+            <div class="section-card">
+                <h3>Filtri</h3>
+                <div class="filters-bar">
+                    <div class="filter-group">
+                        <label>Modello:</label>
+                        <select id="iphoneModelFilter" class="form-control">
+                            <option value="">Tutti</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Tipo Riparazione:</label>
+                        <select id="iphoneRepairFilter" class="form-control">
+                            <option value="">Tutte</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section-card">
+                <h3>Riepilogo rapido</h3>
+                <div id="iphonePriceCards" class="iphone-price-cards"></div>
+            </div>
+
+            <div class="section-card">
+                <h3>Tariffe dettagliate</h3>
+                <div class="table-responsive">
+                    <table class="orders-table">
+                        <thead>
+                            <tr>
+                                <th>Modello</th>
+                                <th>Riparazione</th>
+                                <th>Prezzo</th>
+                                <th>Prezzo Promo</th>
+                                <th>2^ Lavorazione</th>
+                            </tr>
+                        </thead>
+                        <tbody id="iphonePriceTableBody"></tbody>
+                    </table>
+                </div>
+                <p style="margin-top: 8px; font-size: 12px; color: var(--color-text-secondary);">
+                    Le promozioni vengono applicate automaticamente nel calcolo preventivo (seconda riparazione scontata).
+                </p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Toast Notification -->
+    <div class="toast" id="toast"></div>
+
+    <!-- Modals -->
+    <div class="modal" id="changeStatusModal">
+        <div class="modal-content">
+            <h3>Cambia Stato Ordine</h3>
+            <div class="form-group">
+                <label class="form-label">Nuovo Stato</label>
+                <select id="newStatusSelect" class="form-control">
+                    <option value="Preventivo">Preventivo</option>
+                    <option value="In Attesa Approvazione">In Attesa Approvazione</option>
+                    <option value="In Lavorazione">In Lavorazione</option>
+                    <option value="In Attesa Ricambi">In Attesa Ricambi</option>
+                    <option value="Completato">Completato</option>
+                    <option value="Consegnato">Consegnato</option>
+                </select>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn--secondary" onclick="app.closeModal('changeStatusModal')">Annulla</button>
+                <button class="btn btn--primary" onclick="app.confirmChangeStatus()">Conferma</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="addPartModal">
+        <div class="modal-content">
+            <h3>Aggiungi Ricambio</h3>
+            <form id="addPartForm">
+                <div class="form-group">
+                    <label class="form-label">Nome Ricambio</label>
+                    <input type="text" name="partName" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Prezzo (€)</label>
+                    <input type="number" name="partPrice" class="form-control" min="0" step="0.01" required>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn--secondary" onclick="app.closeModal('addPartModal')">Annulla</button>
+                    <button type="submit" class="btn btn--primary">Aggiungi</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal" id="addRefurbishedModal">
+        <div class="modal-content" style="max-width: 560px;">
+            <h3>Aggiungi Dispositivo Ricondizionato</h3>
+            <form id="addRefurbishedForm">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label">Tipo Dispositivo *</label>
+                        <select name="refType" class="form-control" required>
+                            <option value="">Seleziona...</option>
+                            <option value="iPhone">iPhone</option>
+                            <option value="iPad">iPad</option>
+                            <option value="MacBook">MacBook</option>
+                            <option value="Apple Watch">Apple Watch</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Modello *</label>
+                        <select name="refModel" class="form-control" required>
+                            <option value="">Seleziona prima il tipo...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Capacità *</label>
+                        <select name="refCapacity" class="form-control" required>
+                            <option value="">Seleziona...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Colore *</label>
+                        <input type="text" name="refColor" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Numero Seriale/IMEI *</label>
+                        <input type="text" name="refSerial" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Grado Estetico *</label>
+                        <select name="refGrade" class="form-control" required>
+                            <option value="">Seleziona...</option>
+                            <option value="A+">A+ - Come nuovo, nessun segno</option>
+                            <option value="A">A - Ottime condizioni, minimi segni d'uso</option>
+                            <option value="B">B - Buone condizioni, normali segni d'uso</option>
+                            <option value="C">C - Condizioni accettabili, evidenti segni d'uso</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Condizione Batteria (%) *</label>
+                        <input type="number" name="refBattery" class="form-control" min="0" max="100" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Prezzo di Vendita (€) *</label>
+                        <input type="number" name="refPrice" class="form-control" min="0" step="0.01" required>
+                    </div>
+                    <div class="form-group full-width">
+                        <label class="form-label">Accessori Inclusi</label>
+                        <div style="display: flex; gap: 16px; flex-wrap: wrap;">
+                            <label><input type="checkbox" name="refAccessories" value="caricabatterie"> Caricabatterie</label>
+                            <label><input type="checkbox" name="refAccessories" value="cavo"> Cavo</label>
+                            <label><input type="checkbox" name="refAccessories" value="scatola"> Scatola</label>
+                            <label><input type="checkbox" name="refAccessories" value="auricolari"> Auricolari</label>
+                        </div>
+                    </div>
+                    <div class="form-group full-width">
+                        <label class="form-label">Note Interne</label>
+                        <textarea name="refNotes" class="form-control" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn--secondary" onclick="app.closeModal('addRefurbishedModal')">Annulla</button>
+                    <button type="submit" class="btn btn--primary">Aggiungi</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal" id="addQuoteItemModal">
+        <div class="modal-content">
+            <h3>Aggiungi Ricambio al Preventivo</h3>
+            <form id="addQuoteItemForm">
+                <div class="form-group">
+                    <label class="form-label">Modello</label>
+                    <select id="quotePartModelSelect" class="form-control" required>
+                        <option value="">Seleziona modello...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Ricambio</label>
+                    <select name="partId" class="form-control" required id="quotePartSelect">
+                        <option value="">Seleziona ricambio...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Quantità</label>
+                    <input type="number" name="quantity" class="form-control" value="1" min="1" required>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn--secondary" onclick="app.closeModal('addQuoteItemModal')">Annulla</button>
+                    <button type="submit" class="btn btn--primary">Aggiungi</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Quick status change modal -->
+    <div class="modal" id="quickStatusModal">
+        <div class="modal-content">
+            <h3>Cambia stato riparazione</h3>
+            <div class="form-group">
+                <label class="form-label">Nuovo stato</label>
+                <select id="quickStatusSelect" class="form-control">
+                    <option value="Preventivo">Preventivo</option>
+                    <option value="In Attesa Approvazione">In Attesa Approvazione</option>
+                    <option value="In Lavorazione">In Lavorazione</option>
+                    <option value="In Attesa Ricambi">In Attesa Ricambi</option>
+                    <option value="Completato">Completato</option>
+                    <option value="Consegnato">Consegnato</option>
+                </select>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn--secondary" type="button" onclick="app.closeQuickStatusModal()">Annulla</button>
+                <button class="btn btn--primary" type="button" onclick="app.applyQuickStatusChange()">Salva</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Print Preview Modal -->
+    <div class="print-preview-modal" id="printPreviewModal">
+        <div class="print-preview-container">
+            <div class="print-preview-header no-print">
+                <h2 style="color: var(--color-text); margin: 0;">Anteprima Stampa</h2>
+                <div class="print-preview-actions">
+                    <button class="btn btn--primary" onclick="window.print()">
+                        🖨️ Stampa
+                    </button>
+                    <button class="btn btn--secondary" onclick="app.closePrintPreview()">
+                        ✕ Chiudi
+                    </button>
+                </div>
+            </div>
+            <div class="print-preview-content" id="printPreviewContent">
+                <!-- Print content will be rendered here -->
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('service-worker.js')
+            .catch(err => console.warn('Service worker registration failed', err));
+        });
+      }
+    </script>
+  </body>
+</html>
