@@ -992,6 +992,60 @@ select.form-control {
   color: var(--color-text);
 }
 
+.content-header__title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex: 1;
+  min-width: 0;
+}
+
+.content-header__tools {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.parts-search-input {
+  min-width: 220px;
+  max-width: 300px;
+}
+
+.folder-actions {
+  display: flex;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+
+/* Danger ghost button (text-only red action) */
+.btn--danger-ghost {
+  background: transparent;
+  color: var(--color-red-600);
+  border-color: transparent;
+}
+
+.btn--danger-ghost:hover:not(:disabled) {
+  background: var(--color-red-50);
+  color: var(--color-red-700);
+  border-color: var(--color-red-200);
+}
+
+@media (max-width: 768px) {
+  .content-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .content-header__tools {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .parts-search-input {
+    max-width: none;
+  }
+}
+
 @media (max-width: 768px) {
   .parts-folder-layout {
     grid-template-columns: 1fr;

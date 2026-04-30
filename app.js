@@ -3,6 +3,7 @@ const appState = {
   orders: [],
   clients: [],
   parts: [],
+  partsFolders: [],
   repairPriceList: [],
   refurbishedDevices: [],
   evaluations: [],
@@ -877,6 +878,34 @@ ACCESSORI;GLASS;;20,00 €;10 €`;
       if (modelCompare !== 0) return modelCompare;
       return a.name.localeCompare(b.name);
     });
+
+    // Try to load custom parts/folders from localStorage (overrides auto-generated)
+    try {
+      const storedParts = localStorage.getItem('nowfixit_parts');
+      if (storedParts) {
+        const parsed = JSON.parse(storedParts);
+        if (Array.isArray(parsed)) {
+          // Filter out legacy _FOLDER_ placeholders if present
+          appState.parts = parsed.filter(p => p && p.name !== '_FOLDER_');
+        }
+      }
+      const storedFolders = localStorage.getItem('nowfixit_parts_folders');
+      if (storedFolders) {
+        const parsed = JSON.parse(storedFolders);
+        if (Array.isArray(parsed)) {
+          appState.partsFolders = parsed;
+        }
+      }
+    } catch (e) {
+      console.warn('Impossibile leggere parts/folders da localStorage:', e);
+    }
+
+    // Ensure all part models are tracked in folders (migration safety)
+    const partModels = new Set(appState.parts.map(p => p.model).filter(Boolean));
+    partModels.forEach(m => {
+      if (!appState.partsFolders.includes(m)) appState.partsFolders.push(m);
+    });
+
     // Try to load orders from localStorage first
     let loadedFromStorage = false;
     try {
@@ -3419,14 +3448,38 @@ ACCESSORI;GLASS;;20,00 €;10 €`;
     // Company settings are already in the form
   },
 
-  // Folder-based parts management
+  // ==========================================
+  // Folder-based parts management v2
+  // ==========================================
   selectedFolder: null,
+  partsSearchQuery: '',
+
+  // Persist parts and folders to localStorage
+  _savePartsState() {
+    try {
+      // Strip any legacy _FOLDER_ placeholders before saving
+      const clean = appState.parts.filter(p => p && p.name !== '_FOLDER_');
+      localStorage.setItem('nowfixit_parts', JSON.stringify(clean));
+      localStorage.setItem('nowfixit_parts_folders', JSON.stringify(appState.partsFolders));
+    } catch (e) {
+      console.warn('Impossibile salvare parts/folders:', e);
+    }
+  },
+
+  // Returns the canonical folder list: explicit folders ∪ models referenced by parts
+  _getAllFolders() {
+    const fromParts = appState.parts
+      .filter(p => p.name !== '_FOLDER_')
+      .map(p => p.model)
+      .filter(Boolean);
+    const all = new Set([...(appState.partsFolders || []), ...fromParts]);
+    return [...all].sort((a, b) => a.localeCompare(b));
+  },
 
   renderPartsPage() {
     this.updateFolderList();
     this.populateFolderSelect();
-    
-    // If a folder is selected, show its parts
+
     if (this.selectedFolder) {
       this.showFolderParts(this.selectedFolder);
     }
@@ -3436,10 +3489,9 @@ ACCESSORI;GLASS;;20,00 €;10 €`;
     const folderList = document.getElementById('folderList');
     if (!folderList) return;
 
-    // Get unique models (folders) from parts
-    const models = [...new Set(appState.parts.map(part => part.model))].sort();
-    
-    if (models.length === 0) {
+    const folders = this._getAllFolders();
+
+    if (folders.length === 0) {
       folderList.innerHTML = `
         <div class="folder-empty">
           <p>Nessuna cartella</p>
@@ -3451,13 +3503,14 @@ ACCESSORI;GLASS;;20,00 €;10 €`;
       return;
     }
 
-    folderList.innerHTML = models.map(model => {
-      const partsInFolder = appState.parts.filter(p => p.model === model);
+    folderList.innerHTML = folders.map(model => {
+      const partsInFolder = appState.parts.filter(p => p.model === model && p.name !== '_FOLDER_');
       const totalStock = partsInFolder.reduce((sum, p) => sum + (p.stock ?? 0), 0);
       const isSelected = this.selectedFolder === model;
-      
+      const safeName = model.replace(/'/g, "\\'");
+
       return `
-        <div class="folder-item ${isSelected ? 'folder-item--selected' : ''}" onclick="app.selectFolder('${model.replace(/'/g, "\\'")}')">
+        <div class="folder-item ${isSelected ? 'folder-item--selected' : ''}" onclick="app.selectFolder('${safeName}')">
           <div class="folder-icon">📁</div>
           <div class="folder-info">
             <div class="folder-name">${model}</div>
@@ -3470,10 +3523,10 @@ ACCESSORI;GLASS;;20,00 €;10 €`;
 
   selectFolder(folderName) {
     this.selectedFolder = folderName;
+    this.partsSearchQuery = '';
     this.updateFolderList();
     this.showFolderParts(folderName);
-    
-    // Enable the "Add to folder" button
+
     const addBtn = document.getElementById('addPartToFolderBtn');
     if (addBtn) {
       addBtn.disabled = false;
@@ -3485,29 +3538,54 @@ ACCESSORI;GLASS;;20,00 €;10 €`;
     const contentContainer = document.getElementById('partsCatalogContent');
     const footerContainer = document.getElementById('partsCatalogFooter');
     const titleEl = document.getElementById('selectedFolderTitle');
-    
+    const headerEl = document.getElementById('partsContentHeader');
+
     if (!contentContainer) return;
 
     if (titleEl) titleEl.textContent = `📁 ${folderName}`;
 
-    const filteredParts = appState.parts.filter(part => part.model === folderName);
+    // Render header actions (rename / delete folder + search)
+    if (headerEl) {
+      const safeName = folderName.replace(/'/g, "\\'");
+      headerEl.innerHTML = `
+        <div class="content-header__title">
+          <h3 id="selectedFolderTitle">📁 ${folderName}</h3>
+          <div class="folder-actions">
+            <button class="btn btn--ghost btn--sm" onclick="app.renameFolder('${safeName}')" title="Rinomina cartella">✏️ Rinomina</button>
+            <button class="btn btn--ghost btn--sm btn--danger-ghost" onclick="app.deleteFolder('${safeName}')" title="Elimina cartella">🗑️ Elimina</button>
+          </div>
+        </div>
+        <div class="content-header__tools">
+          <input type="search" class="form-control parts-search-input" id="partsSearchInput"
+                 placeholder="🔍 Cerca ricambio..." value="${this.partsSearchQuery || ''}"
+                 oninput="app.onPartsSearchInput(this.value)">
+          <button class="btn btn--sm btn--primary" id="addPartToFolderBtn" onclick="app.showAddPartModal()">
+            ➕ Aggiungi a ${folderName}
+          </button>
+        </div>
+      `;
+    }
+
+    let filteredParts = appState.parts.filter(part => part.model === folderName && part.name !== '_FOLDER_');
+
+    const q = (this.partsSearchQuery || '').trim().toLowerCase();
+    if (q) {
+      filteredParts = filteredParts.filter(p => (p.name || '').toLowerCase().includes(q));
+    }
 
     if (filteredParts.length === 0) {
       contentContainer.innerHTML = `
         <div class="catalog-empty-state">
           <div class="empty-icon">📦</div>
-          <h3>Cartella vuota</h3>
-          <p>Non ci sono ricambi in questa cartella.</p>
-          <button class="btn btn--primary btn--lg" onclick="app.showAddPartModal()">
-            ➕ Aggiungi Ricambio
-          </button>
+          <h3>${q ? 'Nessun risultato' : 'Cartella vuota'}</h3>
+          <p>${q ? `Nessun ricambio corrisponde a "${q}".` : 'Non ci sono ricambi in questa cartella.'}</p>
+          ${q ? '' : `<button class="btn btn--primary btn--lg" onclick="app.showAddPartModal()">➕ Aggiungi Ricambio</button>`}
         </div>
       `;
       if (footerContainer) footerContainer.innerHTML = '';
       return;
     }
 
-    // Sort by name
     filteredParts.sort((a, b) => a.name.localeCompare(b.name));
 
     contentContainer.innerHTML = `
@@ -3545,7 +3623,6 @@ ACCESSORI;GLASS;;20,00 €;10 €`;
       </div>
     `;
 
-    // Update footer with stats
     const lowStockCount = filteredParts.filter(p => (p.stock ?? 0) <= (p.minStock ?? 0)).length;
     if (footerContainer) {
       footerContainer.innerHTML = `
@@ -3563,6 +3640,21 @@ ACCESSORI;GLASS;;20,00 €;10 €`;
     }
   },
 
+  onPartsSearchInput(value) {
+    this.partsSearchQuery = value || '';
+    if (this.selectedFolder) {
+      this.showFolderParts(this.selectedFolder);
+      // Restore focus on the search input
+      const input = document.getElementById('partsSearchInput');
+      if (input) {
+        input.focus();
+        const v = input.value;
+        input.value = '';
+        input.value = v;
+      }
+    }
+  },
+
   showAddFolderModal() {
     const form = document.getElementById('addFolderForm');
     if (form) form.reset();
@@ -3572,32 +3664,25 @@ ACCESSORI;GLASS;;20,00 €;10 €`;
   addFolder() {
     const form = document.getElementById('addFolderForm');
     if (!form) return;
-    
+
     const formData = new FormData(form);
-    const folderName = formData.get('folderName')?.trim();
-    
+    const folderName = (formData.get('folderName') || '').trim();
+
     if (!folderName) {
       this.showToast('Inserisci un nome per la cartella', 'error');
       return;
     }
 
-    // Check if folder already exists
-    const existingModels = [...new Set(appState.parts.map(p => p.model.toLowerCase()))];
-    if (existingModels.includes(folderName.toLowerCase())) {
+    const existing = this._getAllFolders().map(f => f.toLowerCase());
+    if (existing.includes(folderName.toLowerCase())) {
       this.showToast('Questa cartella esiste già', 'error');
       return;
     }
 
-    // Create an empty placeholder part to represent the folder
-    // (will be removed when first real part is added)
-    appState.parts.push({
-      id: appState.parts.length > 0 ? Math.max(...appState.parts.map(p => p.id)) + 1 : 1,
-      name: '_FOLDER_',
-      model: folderName,
-      price: 0,
-      stock: 0,
-      minStock: 0
-    });
+    if (!appState.partsFolders.includes(folderName)) {
+      appState.partsFolders.push(folderName);
+    }
+    this._savePartsState();
 
     this.closeModal('addFolderModal');
     form.reset();
@@ -3606,21 +3691,80 @@ ACCESSORI;GLASS;;20,00 €;10 €`;
     this.showToast(`Cartella "${folderName}" creata`, 'success');
   },
 
+  renameFolder(oldName) {
+    const newName = (prompt('Nuovo nome cartella', oldName) || '').trim();
+    if (!newName || newName === oldName) return;
+
+    const existing = this._getAllFolders().map(f => f.toLowerCase());
+    if (existing.includes(newName.toLowerCase())) {
+      this.showToast('Esiste già una cartella con questo nome', 'error');
+      return;
+    }
+
+    // Update folders list
+    const idx = appState.partsFolders.indexOf(oldName);
+    if (idx !== -1) appState.partsFolders[idx] = newName;
+    else appState.partsFolders.push(newName);
+
+    // Update parts referencing the old name
+    appState.parts.forEach(p => {
+      if (p.model === oldName) p.model = newName;
+    });
+
+    if (this.selectedFolder === oldName) this.selectedFolder = newName;
+
+    this._savePartsState();
+    this.renderPartsPage();
+    this.showToast(`Cartella rinominata in "${newName}"`, 'success');
+  },
+
+  deleteFolder(folderName) {
+    const partsInFolder = appState.parts.filter(p => p.model === folderName && p.name !== '_FOLDER_');
+    const msg = partsInFolder.length > 0
+      ? `La cartella "${folderName}" contiene ${partsInFolder.length} ricambi. Eliminarla insieme a tutti i ricambi?`
+      : `Eliminare la cartella "${folderName}"?`;
+    if (!confirm(msg)) return;
+
+    appState.parts = appState.parts.filter(p => p.model !== folderName);
+    appState.partsFolders = appState.partsFolders.filter(f => f !== folderName);
+
+    if (this.selectedFolder === folderName) {
+      this.selectedFolder = null;
+      const headerEl = document.getElementById('partsContentHeader');
+      if (headerEl) {
+        headerEl.innerHTML = `<h3 id="selectedFolderTitle">Seleziona una cartella</h3>`;
+      }
+      const contentContainer = document.getElementById('partsCatalogContent');
+      if (contentContainer) {
+        contentContainer.innerHTML = `
+          <div class="catalog-empty-state">
+            <div class="empty-icon">📁</div>
+            <h3>Seleziona una cartella</h3>
+            <p>Scegli un modello iPhone dalla lista a sinistra per vedere i ricambi</p>
+          </div>
+        `;
+      }
+      const footerContainer = document.getElementById('partsCatalogFooter');
+      if (footerContainer) footerContainer.innerHTML = '';
+    }
+
+    this._savePartsState();
+    this.renderPartsPage();
+    this.showToast(`Cartella "${folderName}" eliminata`, 'success');
+  },
+
   populateFolderSelect() {
     const select = document.getElementById('partFolderSelect');
     if (!select) return;
 
-    // Get unique models from parts
-    const models = [...new Set(appState.parts.map(part => part.model))].sort();
-    
+    const folders = this._getAllFolders();
+
     let html = '<option value="">Seleziona cartella...</option>';
-    
-    // Add current folder as selected if applicable
-    models.forEach(model => {
+    folders.forEach(model => {
       const selected = this.selectedFolder === model ? 'selected' : '';
       html += `<option value="${model}" ${selected}>${model}</option>`;
     });
-    
+
     select.innerHTML = html;
   },
 
@@ -3640,6 +3784,9 @@ ACCESSORI;GLASS;;20,00 €;10 €`;
 
   showAddPartModal() {
     this.populateFolderSelect();
+    // Pre-select current folder if open
+    const select = document.getElementById('partFolderSelect');
+    if (select && this.selectedFolder) select.value = this.selectedFolder;
     this.openModal('addPartModal');
   },
 
@@ -3647,21 +3794,29 @@ ACCESSORI;GLASS;;20,00 €;10 €`;
     const form = document.getElementById('addPartForm');
     const formData = new FormData(form);
 
-    const folderName = formData.get('partFolder') || this.selectedFolder;
+    const folderName = (formData.get('partFolder') || this.selectedFolder || '').trim();
     if (!folderName) {
       this.showToast('Seleziona una cartella per il ricambio', 'error');
       return;
     }
 
-    // Remove placeholder folder item if exists
-    const placeholderIndex = appState.parts.findIndex(p => p.model === folderName && p.name === '_FOLDER_');
-    if (placeholderIndex !== -1) {
-      appState.parts.splice(placeholderIndex, 1);
+    const partName = (formData.get('partName') || '').trim();
+    if (!partName) {
+      this.showToast('Inserisci il nome del ricambio', 'error');
+      return;
     }
+
+    // Ensure folder is registered
+    if (!appState.partsFolders.includes(folderName)) {
+      appState.partsFolders.push(folderName);
+    }
+
+    // Remove any legacy _FOLDER_ placeholder
+    appState.parts = appState.parts.filter(p => !(p.model === folderName && p.name === '_FOLDER_'));
 
     const newPart = {
       id: appState.parts.length > 0 ? Math.max(...appState.parts.map(p => p.id)) + 1 : 1,
-      name: formData.get('partName'),
+      name: partName,
       model: folderName,
       price: parseFloat(formData.get('partPrice')) || 0,
       stock: parseInt(formData.get('partStock')) || 0,
@@ -3670,6 +3825,8 @@ ACCESSORI;GLASS;;20,00 €;10 €`;
 
     appState.parts.push(newPart);
     this.selectedFolder = folderName;
+    this._savePartsState();
+
     this.closeModal('addPartModal');
     form.reset();
     this.renderPartsPage();
@@ -3682,30 +3839,68 @@ ACCESSORI;GLASS;;20,00 €;10 €`;
 
     const newStock = (part.stock ?? 0) + delta;
     part.stock = newStock < 0 ? 0 : newStock;
+    this._savePartsState();
     this.renderPartsPage();
   },
+
+  // Real modal-based edit (replaces prompt() chain)
+  _editingPartId: null,
 
   editPart(partId) {
     const part = appState.parts.find(p => p.id === partId);
     if (!part) return;
 
-    const name = prompt('Nome ricambio', part.name);
-    if (name === null) return;
-    const model = prompt('Modello / Note (es. iPhone 14, universale...)', part.model || '');
-    if (model === null) return;
-    const priceStr = prompt('Prezzo (€)', String(part.price));
-    if (priceStr === null) return;
-    const minStockStr = prompt('Scorta minima', String(part.minStock ?? 0));
-    if (minStockStr === null) return;
+    this._editingPartId = partId;
 
-    const price = parseFloat(priceStr.replace(',', '.'));
-    const minStock = parseInt(minStockStr, 10) || 0;
+    // Populate folder select
+    const folderSelect = document.getElementById('editPartFolderSelect');
+    if (folderSelect) {
+      const folders = this._getAllFolders();
+      folderSelect.innerHTML = folders
+        .map(f => `<option value="${f}" ${f === part.model ? 'selected' : ''}>${f}</option>`)
+        .join('');
+    }
 
-    if (!isNaN(price)) part.price = price;
-    part.name = name.trim();
-    part.model = model.trim();
-    part.minStock = minStock;
+    const form = document.getElementById('editPartForm');
+    if (form) {
+      form.elements['partName'].value = part.name || '';
+      form.elements['partPrice'].value = part.price ?? 0;
+      form.elements['partStock'].value = part.stock ?? 0;
+      form.elements['partMinStock'].value = part.minStock ?? 0;
+    }
 
+    this.openModal('editPartModal');
+  },
+
+  saveEditedPart() {
+    if (this._editingPartId == null) return;
+    const part = appState.parts.find(p => p.id === this._editingPartId);
+    if (!part) return;
+
+    const form = document.getElementById('editPartForm');
+    if (!form) return;
+    const formData = new FormData(form);
+
+    const newName = (formData.get('partName') || '').trim();
+    const newFolder = (formData.get('partFolder') || part.model || '').trim();
+    if (!newName || !newFolder) {
+      this.showToast('Compila nome e cartella', 'error');
+      return;
+    }
+
+    part.name = newName;
+    part.model = newFolder;
+    part.price = parseFloat(formData.get('partPrice')) || 0;
+    part.stock = parseInt(formData.get('partStock')) || 0;
+    part.minStock = parseInt(formData.get('partMinStock')) || 0;
+
+    if (!appState.partsFolders.includes(newFolder)) {
+      appState.partsFolders.push(newFolder);
+    }
+
+    this._editingPartId = null;
+    this._savePartsState();
+    this.closeModal('editPartModal');
     this.renderPartsPage();
     this.showToast('Ricambio aggiornato', 'success');
   },
@@ -3716,6 +3911,7 @@ ACCESSORI;GLASS;;20,00 €;10 €`;
     const index = appState.parts.findIndex(p => p.id === partId);
     if (index !== -1) {
       appState.parts.splice(index, 1);
+      this._savePartsState();
       this.renderPartsPage();
       this.showToast('Ricambio eliminato', 'success');
     }
