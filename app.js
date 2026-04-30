@@ -1126,6 +1126,21 @@ ACCESSORI;GLASS;;20,00 €;10 €`;
     ];
     appState.evaluationCounter = 3;
 
+    // Override evaluations with localStorage if present
+    try {
+      const storedEvals = localStorage.getItem('nowfixit_evaluations');
+      if (storedEvals) {
+        const parsed = JSON.parse(storedEvals);
+        if (Array.isArray(parsed)) {
+          appState.evaluations = parsed;
+          const maxId = parsed.reduce((m, e) => Math.max(m, e.id || 0), 0);
+          appState.evaluationCounter = maxId + 1;
+        }
+      }
+    } catch (e) {
+      console.warn('Impossibile leggere valutazioni da localStorage:', e);
+    }
+
     // Initialize sample invoices
     appState.invoices = [
       {
@@ -4701,6 +4716,7 @@ ACCESSORI;GLASS;;20,00 €;10 €`;
 
     appState.evaluations.push(evaluation);
     appState.currentEvaluation._saved = evaluation;
+    this._saveEvaluations();
 
     const esito = evaluation.esito;
     if (esito !== 'RIFIUTATO') {
@@ -4709,6 +4725,14 @@ ACCESSORI;GLASS;;20,00 €;10 €`;
     } else {
       this.showToast(`Valutazione ${evalNumber} salvata (rifiutata).`, 'info');
       this.showPage('evaluations');
+    }
+  },
+
+  _saveEvaluations() {
+    try {
+      localStorage.setItem('nowfixit_evaluations', JSON.stringify(appState.evaluations));
+    } catch (e) {
+      console.warn('Impossibile salvare valutazioni:', e);
     }
   },
 
@@ -4838,7 +4862,96 @@ ACCESSORI;GLASS;;20,00 €;10 €`;
     const evaluation = appState.evaluations.find(e => e.id === evaluationId);
     if (!evaluation) return;
 
-    alert(`Dettagli valutazione ${evaluation.numero}\n\nCliente: ${evaluation.cliente.nome} ${evaluation.cliente.cognome}\nDispositivo: ${evaluation.dispositivo.modello}\nOfferta: €${evaluation.prezzoOfferto.toFixed(2)}\nStato: ${evaluation.stato}`);
+    const titleEl = document.getElementById('evaluationDetailTitle');
+    const bodyEl = document.getElementById('evaluationDetailBody');
+    if (!titleEl || !bodyEl) return;
+
+    titleEl.textContent = `📋 ${evaluation.numero || 'Valutazione'}`;
+
+    const c = evaluation.cliente || {};
+    const d = evaluation.dispositivo || {};
+    const dataStr = evaluation.data
+      ? new Date(evaluation.data).toLocaleDateString('it-IT', { day: '2-digit', month: 'long', year: 'numeric' })
+      : '-';
+    const prezzo = evaluation.prezzoOfferto || 0;
+    const notes = (evaluation.noteMotivazione || []).filter(Boolean);
+    const alerts = (evaluation.alertMotivazione || []).filter(Boolean);
+
+    const esitoColors = {
+      RITIRO_OK: 'var(--color-success)',
+      NON_CONVENIENTE: 'var(--color-warning)',
+      SOLO_RICAMBI: 'var(--color-info)',
+      RIFIUTATO: 'var(--color-error)',
+      DA_VALUTARE: 'var(--color-info)'
+    };
+    const esitoColor = esitoColors[evaluation.esito] || 'var(--color-info)';
+
+    bodyEl.innerHTML = `
+      <div class="client-detail-summary">
+        <div class="client-detail-info">
+          <div><strong>Data:</strong> ${dataStr}</div>
+          <div><strong>Cliente:</strong> ${c.nome || ''} ${c.cognome || ''}</div>
+          <div><strong>📞</strong> ${c.telefono || '-'}</div>
+          ${c.email ? `<div><strong>✉️</strong> ${c.email}</div>` : ''}
+        </div>
+        <div class="client-detail-stats">
+          <div class="client-stat">
+            <span class="client-stat__num" style="color:${esitoColor}">€${prezzo.toFixed(0)}</span>
+            <span class="client-stat__lbl">Offerta</span>
+          </div>
+          <div class="client-stat">
+            <span class="client-stat__num">${evaluation.batteriaSalute ?? '-'}${evaluation.batteriaSalute != null ? '%' : ''}</span>
+            <span class="client-stat__lbl">Batteria</span>
+          </div>
+        </div>
+      </div>
+
+      <h4 class="client-detail-section">Dispositivo</h4>
+      <div class="client-detail-summary">
+        <div class="client-detail-info">
+          <div><strong>Tipo:</strong> ${d.tipo || '-'}</div>
+          <div><strong>Modello:</strong> ${d.modello || '-'}</div>
+          <div><strong>Capacità:</strong> ${d.capacita || '-'}</div>
+          <div><strong>Colore:</strong> ${d.colore || '-'}</div>
+          <div><strong>Seriale/IMEI:</strong> ${d.seriale || '-'}</div>
+        </div>
+      </div>
+
+      <h4 class="client-detail-section">Esito</h4>
+      <div style="margin-bottom: var(--space-3);">
+        <span class="status-badge" style="background:${esitoColor}20;color:${esitoColor};border:1px solid ${esitoColor}40">${evaluation.esito || 'DA_VALUTARE'}</span>
+        <span class="status-badge" style="margin-left:8px">${evaluation.stato || 'In Attesa'}</span>
+      </div>
+
+      ${notes.length ? `
+        <h4 class="client-detail-section">Note</h4>
+        <ul style="margin:0;padding-left:18px;font-size:var(--font-size-sm);color:var(--color-text-secondary);">
+          ${notes.map(n => `<li>${n}</li>`).join('')}
+        </ul>
+      ` : ''}
+
+      ${alerts.length ? `
+        <h4 class="client-detail-section">Alert</h4>
+        <ul style="margin:0;padding-left:18px;font-size:var(--font-size-sm);color:var(--color-warning);">
+          ${alerts.map(a => `<li>${a}</li>`).join('')}
+        </ul>
+      ` : ''}
+
+      ${evaluation.note ? `
+        <h4 class="client-detail-section">Annotazioni</h4>
+        <p style="font-size:var(--font-size-sm);color:var(--color-text-secondary);margin:0;">${evaluation.note}</p>
+      ` : ''}
+
+      <div class="client-detail-actions" style="margin-top: var(--space-4);">
+        ${evaluation.esito && evaluation.esito !== 'RIFIUTATO' ? `
+          <button class="btn btn--sm btn--primary" onclick="app.printDichiarazioneVendita(appState.evaluations.find(e => e.id === ${evaluation.id}))">
+            🖨️ Stampa dichiarazione
+          </button>` : ''}
+        <button class="btn btn--sm btn--secondary" onclick="app.closeModal('evaluationDetailModal')">Chiudi</button>
+      </div>
+    `;
+
+    this.openModal('evaluationDetailModal');
   },
 
   createInvoiceFromOrder() {
