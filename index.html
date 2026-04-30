@@ -455,6 +455,9 @@
                     ← Indietro
                 </button>
                 <h2>Gestione Clienti</h2>
+                <button class="btn btn--primary" onclick="app.showAddClientModal()">
+                    ➕ Aggiungi Cliente
+                </button>
             </div>
 
             <!-- Search -->
@@ -495,6 +498,35 @@
                     <div class="modal-actions">
                         <button type="button" class="btn btn--secondary" onclick="app.closeModal('editClientModal')">Annulla</button>
                         <button type="submit" class="btn btn--primary">Salva</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Modal: Aggiungi Cliente -->
+        <div class="modal" id="addClientModal">
+            <div class="modal-content">
+                <h3>➕ Nuovo Cliente</h3>
+                <form id="addClientForm" onsubmit="event.preventDefault(); app.saveNewClient();">
+                    <div class="form-group">
+                        <label class="form-label">Nome *</label>
+                        <input type="text" name="name" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Cognome *</label>
+                        <input type="text" name="surname" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Telefono *</label>
+                        <input type="tel" name="phone" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Email</label>
+                        <input type="email" name="email" class="form-control">
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn--secondary" onclick="app.closeModal('addClientModal')">Annulla</button>
+                        <button type="submit" class="btn btn--primary">Aggiungi</button>
                     </div>
                 </form>
             </div>

@@ -1141,6 +1141,19 @@ ACCESSORI;GLASS;;20,00 €;10 €`;
       console.warn('Impossibile leggere valutazioni da localStorage:', e);
     }
 
+    // Load manual clients (those added without orders)
+    try {
+      const storedManualClients = localStorage.getItem('nowfixit_clients_manual');
+      if (storedManualClients) {
+        const parsed = JSON.parse(storedManualClients);
+        if (Array.isArray(parsed)) {
+          appState.clientsManual = parsed;
+        }
+      }
+    } catch (e) {
+      console.warn('Impossibile leggere clienti manuali da localStorage:', e);
+    }
+
     // Initialize sample invoices
     appState.invoices = [
       {
@@ -3402,6 +3415,7 @@ ACCESSORI;GLASS;;20,00 €;10 €`;
   updateClientsList() {
     const clientsMap = new Map();
 
+    // First, add clients from orders
     appState.orders.forEach(order => {
       const key = order.customer.phone;
       if (!clientsMap.has(key)) {
@@ -3425,6 +3439,23 @@ ACCESSORI;GLASS;;20,00 €;10 €`;
         if (order.customer.email) c.email = order.customer.email;
       }
     });
+
+    // Then, add manual clients (those without orders)
+    if (appState.clientsManual) {
+      appState.clientsManual.forEach(manualClient => {
+        const key = manualClient.phone;
+        if (!clientsMap.has(key)) {
+          clientsMap.set(key, {
+            name: manualClient.name,
+            surname: manualClient.surname,
+            phone: manualClient.phone,
+            email: manualClient.email,
+            orders: [],
+            _manual: true
+          });
+        }
+      });
+    }
 
     appState.clients = Array.from(clientsMap.values()).sort((a, b) =>
       `${a.surname} ${a.name}`.localeCompare(`${b.surname} ${b.name}`)
@@ -3642,6 +3673,60 @@ ACCESSORI;GLASS;;20,00 €;10 €`;
     this.closeModal('editClientModal');
     this.renderClientsList();
     this.showToast(`Cliente aggiornato (${updatedCount} riparazioni allineate)`, 'success');
+  },
+
+  showAddClientModal() {
+    const form = document.getElementById('addClientForm');
+    if (!form) return;
+    form.reset();
+    this.openModal('addClientModal');
+  },
+
+  saveNewClient() {
+    const form = document.getElementById('addClientForm');
+    if (!form) return;
+    const fd = new FormData(form);
+
+    const name = (fd.get('name') || '').trim();
+    const surname = (fd.get('surname') || '').trim();
+    const phone = (fd.get('phone') || '').trim();
+    const email = (fd.get('email') || '').trim();
+
+    if (!name || !surname || !phone) {
+      this.showToast('Compila nome, cognome e telefono', 'error');
+      return;
+    }
+
+    // Check for duplicate phone
+    const conflict = appState.clients.some(c => c.phone === phone);
+    if (conflict) {
+      this.showToast('Esiste già un cliente con questo telefono', 'error');
+      return;
+    }
+
+    // Add to manual clients array
+    if (!appState.clientsManual) {
+      appState.clientsManual = [];
+    }
+    appState.clientsManual.push({
+      name,
+      surname,
+      phone,
+      email,
+      orders: [],
+      _manual: true
+    });
+
+    try {
+      localStorage.setItem('nowfixit_clients_manual', JSON.stringify(appState.clientsManual));
+    } catch (e) {
+      console.warn('Impossibile salvare cliente manuale:', e);
+    }
+
+    this.updateClientsList();
+    this.closeModal('addClientModal');
+    this.renderClientsList();
+    this.showToast('Cliente aggiunto con successo', 'success');
   },
 
   renderSettings() {
