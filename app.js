@@ -3386,7 +3386,7 @@ ACCESSORI;GLASS;;20,00 €;10 €`;
 
   updateClientsList() {
     const clientsMap = new Map();
-    
+
     appState.orders.forEach(order => {
       const key = order.customer.phone;
       if (!clientsMap.has(key)) {
@@ -3398,40 +3398,108 @@ ACCESSORI;GLASS;;20,00 €;10 €`;
           orders: []
         });
       }
-      clientsMap.get(key).orders.push(order);
+      const c = clientsMap.get(key);
+      c.orders.push(order);
+      // Always keep the most recent name/email if updated on a more recent order
+      const lastDate = c._lastDate || 0;
+      const orderDate = new Date(order.dateCreated || order.timeline?.[0]?.date || 0).getTime();
+      if (orderDate >= lastDate) {
+        c._lastDate = orderDate;
+        if (order.customer.name) c.name = order.customer.name;
+        if (order.customer.surname) c.surname = order.customer.surname;
+        if (order.customer.email) c.email = order.customer.email;
+      }
     });
 
-    appState.clients = Array.from(clientsMap.values());
+    appState.clients = Array.from(clientsMap.values()).sort((a, b) =>
+      `${a.surname} ${a.name}`.localeCompare(`${b.surname} ${b.name}`)
+    );
+  },
+
+  // Aggregated stats for a client (used in cards and detail modal)
+  _clientStats(client) {
+    const total = client.orders.reduce((sum, o) => {
+      const v = o.quote?.total ?? o.totalAmount ?? 0;
+      return sum + (typeof v === 'number' ? v : 0);
+    }, 0);
+    const dates = client.orders
+      .map(o => new Date(o.dateCreated || o.timeline?.[0]?.date || 0).getTime())
+      .filter(t => t > 0);
+    const lastTs = dates.length ? Math.max(...dates) : 0;
+    const lastDate = lastTs ? new Date(lastTs).toLocaleDateString('it-IT') : '-';
+    const completed = client.orders.filter(o =>
+      o.status === 'Completato' || o.status === 'Consegnato'
+    ).length;
+    return { total, lastDate, completed };
+  },
+
+  // Sanitize phone for tel: / wa.me links
+  _sanitizePhone(phone) {
+    return (phone || '').replace(/[^\d+]/g, '');
   },
 
   renderClientsList() {
-    const searchQuery = document.getElementById('clientSearchInput')?.value.toLowerCase() || '';
-    
+    const searchQuery = (document.getElementById('clientSearchInput')?.value || '').toLowerCase().trim();
+
     let filteredClients = appState.clients;
-    
+
     if (searchQuery) {
-      filteredClients = filteredClients.filter(c =>
-        `${c.name} ${c.surname}`.toLowerCase().includes(searchQuery) ||
-        c.phone.includes(searchQuery)
-      );
+      filteredClients = filteredClients.filter(c => {
+        const fullName = `${c.name || ''} ${c.surname || ''}`.toLowerCase();
+        return fullName.includes(searchQuery)
+          || (c.phone || '').toLowerCase().includes(searchQuery)
+          || (c.email || '').toLowerCase().includes(searchQuery);
+      });
     }
 
     const clientsList = document.getElementById('clientsList');
-    if (clientsList) {
-      clientsList.innerHTML = filteredClients.map(client => `
-        <div class="client-card" onclick="app.showClientOrders('${client.phone}')">
-          <div class="client-name">
-            ${client.name} ${client.surname}
-            <button class="client-edit-btn" onclick="event.stopPropagation(); app.editClient('${client.phone}')" title="Modifica cliente">
+    if (!clientsList) return;
+
+    if (filteredClients.length === 0) {
+      clientsList.innerHTML = `
+        <div class="catalog-empty-state">
+          <div class="empty-icon">👤</div>
+          <h3>${searchQuery ? 'Nessun cliente trovato' : 'Nessun cliente'}</h3>
+          <p>${searchQuery ? `Nessun risultato per "${searchQuery}"` : 'I clienti compaiono qui dopo aver creato una riparazione.'}</p>
+        </div>
+      `;
+      return;
+    }
+
+    clientsList.innerHTML = filteredClients.map(client => {
+      const stats = this._clientStats(client);
+      const phoneSafe = client.phone.replace(/'/g, "\\'");
+      const telLink = this._sanitizePhone(client.phone);
+      const initials = ((client.name?.[0] || '') + (client.surname?.[0] || '')).toUpperCase() || '?';
+
+      return `
+        <div class="client-card" onclick="app.showClientDetail('${phoneSafe}')">
+          <div class="client-card__top">
+            <div class="client-avatar">${initials}</div>
+            <div class="client-card__id">
+              <div class="client-name">${client.name || ''} ${client.surname || ''}</div>
+              <div class="client-info">📞 ${client.phone || '-'}</div>
+              ${client.email ? `<div class="client-info">✉️ ${client.email}</div>` : ''}
+            </div>
+            <button class="client-edit-btn" onclick="event.stopPropagation(); app.editClient('${phoneSafe}')" title="Modifica cliente">
               ✏️
             </button>
           </div>
-          <div class="client-info">📞 ${client.phone}</div>
-          <div class="client-info">✉️ ${client.email || '-'}</div>
-          <div class="client-info">📋 ${client.orders.length} riparazioni</div>
+          <div class="client-card__stats">
+            <div class="client-stat"><span class="client-stat__num">${client.orders.length}</span><span class="client-stat__lbl">Riparazioni</span></div>
+            <div class="client-stat"><span class="client-stat__num">${stats.completed}</span><span class="client-stat__lbl">Completate</span></div>
+            <div class="client-stat"><span class="client-stat__num">€${stats.total.toFixed(0)}</span><span class="client-stat__lbl">Totale</span></div>
+          </div>
+          <div class="client-card__meta">Ultima attività: ${stats.lastDate}</div>
+          <div class="client-card__actions" onclick="event.stopPropagation()">
+            <a href="tel:${telLink}" class="btn btn--sm btn--ghost" title="Chiama">📞 Chiama</a>
+            <a href="https://wa.me/${telLink.replace('+','')}" target="_blank" rel="noopener" class="btn btn--sm btn--ghost" title="WhatsApp">💬 WhatsApp</a>
+            ${client.email ? `<a href="mailto:${client.email}" class="btn btn--sm btn--ghost" title="Email">✉️ Email</a>` : ''}
+            <button class="btn btn--sm btn--ghost" onclick="app.showClientOrders('${phoneSafe}')" title="Vedi tutte le riparazioni">📋 Riparazioni</button>
+          </div>
         </div>
-      `).join('');
-    }
+      `;
+    }).join('');
   },
 
   showClientOrders(phone) {
@@ -3439,9 +3507,126 @@ ACCESSORI;GLASS;;20,00 €;10 €`;
     this.showPage('orders');
   },
 
+  // Show detail modal with full repair history
+  showClientDetail(phone) {
+    const client = appState.clients.find(c => c.phone === phone);
+    if (!client) return;
+
+    document.getElementById('clientDetailName').textContent =
+      `${client.name || ''} ${client.surname || ''}`.trim() || 'Cliente';
+
+    const stats = this._clientStats(client);
+    const telLink = this._sanitizePhone(client.phone);
+
+    const orders = [...client.orders].sort((a, b) => {
+      const da = new Date(a.dateCreated || 0).getTime();
+      const db = new Date(b.dateCreated || 0).getTime();
+      return db - da;
+    });
+
+    const body = document.getElementById('clientDetailBody');
+    body.innerHTML = `
+      <div class="client-detail-summary">
+        <div class="client-detail-info">
+          <div><strong>📞</strong> ${client.phone || '-'}</div>
+          <div><strong>✉️</strong> ${client.email || '-'}</div>
+          <div><strong>Ultima attività:</strong> ${stats.lastDate}</div>
+        </div>
+        <div class="client-detail-stats">
+          <div class="client-stat"><span class="client-stat__num">${client.orders.length}</span><span class="client-stat__lbl">Totali</span></div>
+          <div class="client-stat"><span class="client-stat__num">${stats.completed}</span><span class="client-stat__lbl">Completate</span></div>
+          <div class="client-stat"><span class="client-stat__num">€${stats.total.toFixed(2)}</span><span class="client-stat__lbl">Speso</span></div>
+        </div>
+      </div>
+      <div class="client-detail-actions">
+        <a href="tel:${telLink}" class="btn btn--sm btn--secondary">📞 Chiama</a>
+        <a href="https://wa.me/${telLink.replace('+','')}" target="_blank" rel="noopener" class="btn btn--sm btn--secondary">💬 WhatsApp</a>
+        ${client.email ? `<a href="mailto:${client.email}" class="btn btn--sm btn--secondary">✉️ Email</a>` : ''}
+        <button class="btn btn--sm btn--primary" onclick="app.editClient('${phone.replace(/'/g, "\\'")}')">✏️ Modifica</button>
+      </div>
+      <h4 class="client-detail-section">Riparazioni (${orders.length})</h4>
+      <div class="client-detail-orders">
+        ${orders.length === 0 ? '<p class="text-muted">Nessuna riparazione</p>' : orders.map(o => `
+          <div class="client-order-row" onclick="app.closeModal('clientDetailModal'); app.showOrderDetail(${o.id})">
+            <div class="client-order-row__main">
+              <div class="client-order-row__num">${o.number || '-'}</div>
+              <div class="client-order-row__device">${o.device?.type || ''} ${o.device?.model || ''}</div>
+            </div>
+            <div class="client-order-row__meta">
+              <span class="status-badge">${o.status || ''}</span>
+              <span class="client-order-row__date">${o.dateCreated ? new Date(o.dateCreated).toLocaleDateString('it-IT') : ''}</span>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+
+    this.openModal('clientDetailModal');
+  },
+
   editClient(phone) {
-    // Stub per modifica cliente - da implementare con modal/form dedicato
-    this.showToast('Modifica cliente in sviluppo', 'info');
+    const client = appState.clients.find(c => c.phone === phone);
+    if (!client) return;
+
+    const form = document.getElementById('editClientForm');
+    if (!form) return;
+
+    form.elements['originalPhone'].value = client.phone;
+    form.elements['name'].value = client.name || '';
+    form.elements['surname'].value = client.surname || '';
+    form.elements['phone'].value = client.phone || '';
+    form.elements['email'].value = client.email || '';
+
+    this.openModal('editClientModal');
+  },
+
+  saveEditedClient() {
+    const form = document.getElementById('editClientForm');
+    if (!form) return;
+    const fd = new FormData(form);
+
+    const originalPhone = fd.get('originalPhone');
+    const name = (fd.get('name') || '').trim();
+    const surname = (fd.get('surname') || '').trim();
+    const phone = (fd.get('phone') || '').trim();
+    const email = (fd.get('email') || '').trim();
+
+    if (!name || !surname || !phone) {
+      this.showToast('Compila nome, cognome e telefono', 'error');
+      return;
+    }
+
+    // If phone changed, ensure no other client uses the new phone
+    if (phone !== originalPhone) {
+      const conflict = appState.clients.some(c => c.phone === phone);
+      if (conflict) {
+        this.showToast('Esiste già un cliente con questo telefono', 'error');
+        return;
+      }
+    }
+
+    // Propagate changes to all orders linked to this client
+    let updatedCount = 0;
+    appState.orders.forEach(order => {
+      if (order.customer && order.customer.phone === originalPhone) {
+        order.customer.name = name;
+        order.customer.surname = surname;
+        order.customer.phone = phone;
+        order.customer.email = email;
+        updatedCount++;
+      }
+    });
+
+    try {
+      localStorage.setItem('nowfixit_orders', JSON.stringify(appState.orders));
+    } catch (e) {
+      console.warn('Impossibile salvare ordini aggiornati:', e);
+    }
+
+    this.updateClientsList();
+    this.closeModal('editClientModal');
+    this.renderClientsList();
+    this.showToast(`Cliente aggiornato (${updatedCount} riparazioni allineate)`, 'success');
   },
 
   renderSettings() {

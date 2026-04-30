@@ -461,12 +461,54 @@
             <div class="filters-bar">
                 <div class="filter-group">
                     <label>Cerca:</label>
-                    <input type="text" id="clientSearchInput" class="form-control" placeholder="Nome, cognome o telefono...">
+                    <input type="text" id="clientSearchInput" class="form-control" placeholder="Nome, cognome, telefono o email...">
                 </div>
             </div>
 
             <!-- Clients List -->
             <div class="clients-grid" id="clientsList"></div>
+        </div>
+
+        <!-- Modal: Modifica Cliente -->
+        <div class="modal" id="editClientModal">
+            <div class="modal-content">
+                <h3>✏️ Modifica Cliente</h3>
+                <form id="editClientForm" onsubmit="event.preventDefault(); app.saveEditedClient();">
+                    <input type="hidden" name="originalPhone">
+                    <div class="form-group">
+                        <label class="form-label">Nome *</label>
+                        <input type="text" name="name" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Cognome *</label>
+                        <input type="text" name="surname" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Telefono *</label>
+                        <input type="tel" name="phone" class="form-control" required>
+                        <small class="form-hint">Modificare il telefono aggiorna tutte le riparazioni collegate</small>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Email</label>
+                        <input type="email" name="email" class="form-control">
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn btn--secondary" onclick="app.closeModal('editClientModal')">Annulla</button>
+                        <button type="submit" class="btn btn--primary">Salva</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Modal: Dettaglio Cliente -->
+        <div class="modal" id="clientDetailModal">
+            <div class="modal-content modal-content--wide">
+                <div class="client-detail-header">
+                    <h3 id="clientDetailName">Cliente</h3>
+                    <button class="btn btn--ghost btn--sm" onclick="app.closeModal('clientDetailModal')">✕</button>
+                </div>
+                <div id="clientDetailBody"></div>
+            </div>
         </div>
 
         <!-- Refurbished Shop Page -->
