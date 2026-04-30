@@ -1337,24 +1337,43 @@
 
             <div class="parts-catalog-container">
                 <div class="catalog-header">
-                    <h2 class="catalog-title">📦 Catalogo Ricambi</h2>
+                    <h2 class="catalog-title">📦 Magazzino Ricambi</h2>
                     <div class="catalog-controls">
-                        <div class="model-selector">
-                            <label for="partsModelFilter">Modello:</label>
-                            <select id="partsModelFilter" class="form-control">
-                                <option value="">Tutti i modelli</option>
-                            </select>
-                        </div>
+                        <button class="btn btn--secondary" onclick="app.showAddFolderModal()">
+                            📁 Nuova Cartella
+                        </button>
                         <button class="btn btn--primary" onclick="app.showAddPartModal()">
                             ➕ Aggiungi Ricambio
                         </button>
                     </div>
                 </div>
-                <div class="catalog-content" id="partsCatalogContent">
-                    <!-- Content will be dynamically generated -->
-                </div>
-                <div class="catalog-footer" id="partsCatalogFooter">
-                    <!-- Stats will be dynamically generated -->
+                <div class="parts-folder-layout">
+                    <!-- Sidebar: Cartelle/Modelli -->
+                    <div class="parts-sidebar" id="partsSidebar">
+                        <div class="sidebar-header">
+                            <h3>📁 Cartelle</h3>
+                        </div>
+                        <div class="folder-list" id="folderList">
+                            <!-- Cartelle generate dinamicamente -->
+                        </div>
+                    </div>
+                    <!-- Content: Ricambi della cartella selezionata -->
+                    <div class="parts-content-area">
+                        <div class="content-header" id="partsContentHeader">
+                            <h3 id="selectedFolderTitle">Seleziona una cartella</h3>
+                            <button class="btn btn--sm btn--primary" id="addPartToFolderBtn" onclick="app.showAddPartModal()" disabled>
+                                ➕ Aggiungi a questa cartella
+                            </button>
+                        </div>
+                        <div class="catalog-content" id="partsCatalogContent">
+                            <div class="catalog-empty-state">
+                                <div class="empty-icon">📁</div>
+                                <h3>Seleziona una cartella</h3>
+                                <p>Scegli un modello iPhone dalla lista a sinistra per vedere i ricambi</p>
+                            </div>
+                        </div>
+                        <div class="catalog-footer" id="partsCatalogFooter"></div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1434,26 +1453,6 @@
                 <button class="btn btn--secondary" onclick="app.closeModal('changeStatusModal')">Annulla</button>
                 <button class="btn btn--primary" onclick="app.confirmChangeStatus()">Conferma</button>
             </div>
-        </div>
-    </div>
-
-    <div class="modal" id="addPartModal">
-        <div class="modal-content">
-            <h3>Aggiungi Ricambio</h3>
-            <form id="addPartForm">
-                <div class="form-group">
-                    <label class="form-label">Nome Ricambio</label>
-                    <input type="text" name="partName" class="form-control" required>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Prezzo (€)</label>
-                    <input type="number" name="partPrice" class="form-control" min="0" step="0.01" required>
-                </div>
-                <div class="modal-actions">
-                    <button type="button" class="btn btn--secondary" onclick="app.closeModal('addPartModal')">Annulla</button>
-                    <button type="submit" class="btn btn--primary">Aggiungi</button>
-                </div>
-            </form>
         </div>
     </div>
 
@@ -1599,6 +1598,59 @@
             <div class="print-preview-content" id="printPreviewContent">
                 <!-- Print content will be rendered here -->
             </div>
+        </div>
+    </div>
+
+    <!-- Modal: Nuova Cartella -->
+    <div class="modal" id="addFolderModal">
+        <div class="modal-content">
+            <h3>📁 Nuova Cartella</h3>
+            <form id="addFolderForm" onsubmit="event.preventDefault(); app.addFolder();">
+                <div class="form-group">
+                    <label class="form-label">Nome Cartella (Modello) *</label>
+                    <input type="text" name="folderName" class="form-control" placeholder="es. iPhone 14 Pro Max" required>
+                    <small class="form-hint">Inserisci il nome del modello iPhone</small>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn--secondary" onclick="app.closeModal('addFolderModal')">Annulla</button>
+                    <button type="submit" class="btn btn--primary">Crea Cartella</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: Aggiungi Ricambio (aggiornato con selezione cartella) -->
+    <div class="modal" id="addPartModal">
+        <div class="modal-content">
+            <h3>➕ Aggiungi Ricambio</h3>
+            <form id="addPartForm" onsubmit="event.preventDefault(); app.addPart();">
+                <div class="form-group">
+                    <label class="form-label">Cartella (Modello) *</label>
+                    <select name="partFolder" id="partFolderSelect" class="form-control" required>
+                        <option value="">Seleziona cartella...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Nome Ricambio *</label>
+                    <input type="text" name="partName" class="form-control" placeholder="es. Display OLED" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Prezzo (€)</label>
+                    <input type="number" name="partPrice" class="form-control" min="0" step="0.01" placeholder="0.00">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Quantità iniziale</label>
+                    <input type="number" name="partStock" class="form-control" min="0" value="0">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Scorta minima</label>
+                    <input type="number" name="partMinStock" class="form-control" min="0" value="1">
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn--secondary" onclick="app.closeModal('addPartModal')">Annulla</button>
+                    <button type="submit" class="btn btn--primary">Aggiungi Ricambio</button>
+                </div>
+            </form>
         </div>
     </div>
 

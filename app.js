@@ -3425,54 +3425,97 @@ ACCESSORI;GLASS;;20,00 €;10 €`;
     // Company settings are already in the form
   },
 
+  // Folder-based parts management
+  selectedFolder: null,
+
   renderPartsPage() {
+    this.updateFolderList();
+    this.populateFolderSelect();
+    
+    // If a folder is selected, show its parts
+    if (this.selectedFolder) {
+      this.showFolderParts(this.selectedFolder);
+    }
+  },
+
+  updateFolderList() {
+    const folderList = document.getElementById('folderList');
+    if (!folderList) return;
+
+    // Get unique models (folders) from parts
+    const models = [...new Set(appState.parts.map(part => part.model))].sort();
+    
+    if (models.length === 0) {
+      folderList.innerHTML = `
+        <div class="folder-empty">
+          <p>Nessuna cartella</p>
+          <button class="btn btn--sm btn--primary" onclick="app.showAddFolderModal()">
+            📁 Crea la prima cartella
+          </button>
+        </div>
+      `;
+      return;
+    }
+
+    folderList.innerHTML = models.map(model => {
+      const partsInFolder = appState.parts.filter(p => p.model === model);
+      const totalStock = partsInFolder.reduce((sum, p) => sum + (p.stock ?? 0), 0);
+      const isSelected = this.selectedFolder === model;
+      
+      return `
+        <div class="folder-item ${isSelected ? 'folder-item--selected' : ''}" onclick="app.selectFolder('${model.replace(/'/g, "\\'")}')">
+          <div class="folder-icon">📁</div>
+          <div class="folder-info">
+            <div class="folder-name">${model}</div>
+            <div class="folder-meta">${partsInFolder.length} ricambi • ${totalStock} pz totali</div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  },
+
+  selectFolder(folderName) {
+    this.selectedFolder = folderName;
+    this.updateFolderList();
+    this.showFolderParts(folderName);
+    
+    // Enable the "Add to folder" button
+    const addBtn = document.getElementById('addPartToFolderBtn');
+    if (addBtn) {
+      addBtn.disabled = false;
+      addBtn.textContent = `➕ Aggiungi a ${folderName}`;
+    }
+  },
+
+  showFolderParts(folderName) {
     const contentContainer = document.getElementById('partsCatalogContent');
     const footerContainer = document.getElementById('partsCatalogFooter');
+    const titleEl = document.getElementById('selectedFolderTitle');
     
-    if (!contentContainer || !footerContainer) return;
+    if (!contentContainer) return;
 
-    // Populate model dropdown
-    this.populateModelDropdown();
+    if (titleEl) titleEl.textContent = `📁 ${folderName}`;
 
-    const selectedModel = (document.getElementById('partsModelFilter')?.value || '').toLowerCase();
-
-    // Filter parts by selected model
-    let filteredParts = appState.parts;
-    if (selectedModel) {
-      filteredParts = filteredParts.filter(part => 
-        part.model.toLowerCase() === selectedModel
-      );
-    }
+    const filteredParts = appState.parts.filter(part => part.model === folderName);
 
     if (filteredParts.length === 0) {
       contentContainer.innerHTML = `
         <div class="catalog-empty-state">
           <div class="empty-icon">📦</div>
-          <h3>Nessun Ricambio Trovato</h3>
-          <p>${selectedModel ? `Nessun ricambio disponibile per il modello ${selectedModel.toUpperCase()}.` : 'Inizia ad aggiungere i ricambi per il tuo magazzino.'}</p>
+          <h3>Cartella vuota</h3>
+          <p>Non ci sono ricambi in questa cartella.</p>
           <button class="btn btn--primary btn--lg" onclick="app.showAddPartModal()">
-            ➕ ${selectedModel ? `Aggiungi Ricambio per ${selectedModel.toUpperCase()}` : 'Aggiungi Primo Ricambio'}
+            ➕ Aggiungi Ricambio
           </button>
         </div>
       `;
-      
-      footerContainer.innerHTML = '';
+      if (footerContainer) footerContainer.innerHTML = '';
       return;
     }
 
-    // Sort by model, then by name
-    filteredParts.sort((a, b) => {
-      const modelCompare = a.model.localeCompare(b.model);
-      if (modelCompare !== 0) return modelCompare;
-      return a.name.localeCompare(b.name);
-    });
+    // Sort by name
+    filteredParts.sort((a, b) => a.name.localeCompare(b.name));
 
-    const deviceIcons = {
-      'iphone': '📱', 'ipad': '📟', 'macbook': '💻',
-      'apple watch': '⌚', 'generico': '🔧'
-    };
-
-    // Create parts grid
     contentContainer.innerHTML = `
       <div class="parts-grid-new">
         ${filteredParts.map(part => {
@@ -3480,21 +3523,18 @@ ACCESSORI;GLASS;;20,00 €;10 €`;
           const minStock = part.minStock ?? 0;
           const isLowStock = stockLevel > 0 && stockLevel <= minStock;
           const isOutOfStock = stockLevel === 0;
-          const modelKey = (part.model || '').toLowerCase();
-          const icon = Object.entries(deviceIcons).find(([k]) => modelKey.includes(k))?.[1] ?? '🔩';
 
           return `
             <div class="part-card ${isOutOfStock ? 'part-card--out' : isLowStock ? 'part-card--low' : ''}">
               <div class="part-card__top">
-                <div class="part-card__icon">${icon}</div>
+                <div class="part-card__icon">🔩</div>
                 <div class="part-card__meta">
-                  <span class="part-card__model">${part.model}</span>
                   ${isOutOfStock ? '<span class="part-card__badge part-card__badge--out">Esaurito</span>' : isLowStock ? '<span class="part-card__badge part-card__badge--low">Scorta bassa</span>' : ''}
                 </div>
               </div>
               <h4 class="part-card__name">${part.name}</h4>
               <div class="part-card__body">
-                <div class="part-card__price">€${part.price.toFixed(2)}</div>
+                <div class="part-card__price">€${(part.price || 0).toFixed(2)}</div>
                 <div class="part-card__stock-row">
                   <button class="btn-icon btn-neg" onclick="app.changePartStock(${part.id}, -1)" ${stockLevel <= 0 ? 'disabled' : ''} title="Diminuisci">−</button>
                   <span class="part-card__stock-count ${isOutOfStock ? 'stock-out' : isLowStock ? 'stock-warning' : 'stock-good'}">${stockLevel} pz</span>
@@ -3513,37 +3553,86 @@ ACCESSORI;GLASS;;20,00 €;10 €`;
 
     // Update footer with stats
     const lowStockCount = filteredParts.filter(p => (p.stock ?? 0) <= (p.minStock ?? 0)).length;
-    footerContainer.innerHTML = `
-      <div class="catalog-stats">
-        <div class="stat-item">
-          <span class="stat-value">${filteredParts.length}</span>
-          <span class="stat-label">Ricambi</span>
+    if (footerContainer) {
+      footerContainer.innerHTML = `
+        <div class="catalog-stats">
+          <div class="stat-item">
+            <span class="stat-value">${filteredParts.length}</span>
+            <span class="stat-label">Ricambi</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-value warning">${lowStockCount}</span>
+            <span class="stat-label">Scorta Bassa</span>
+          </div>
         </div>
-        <div class="stat-item">
-          <span class="stat-value warning">${lowStockCount}</span>
-          <span class="stat-label">Scorta Bassa</span>
-        </div>
-      </div>
-    `;
+      `;
+    }
   },
 
-  populateModelDropdown() {
-    const dropdown = document.getElementById('partsModelFilter');
-    if (!dropdown) return;
+  showAddFolderModal() {
+    const form = document.getElementById('addFolderForm');
+    if (form) form.reset();
+    this.openModal('addFolderModal');
+  },
+
+  addFolder() {
+    const form = document.getElementById('addFolderForm');
+    if (!form) return;
+    
+    const formData = new FormData(form);
+    const folderName = formData.get('folderName')?.trim();
+    
+    if (!folderName) {
+      this.showToast('Inserisci un nome per la cartella', 'error');
+      return;
+    }
+
+    // Check if folder already exists
+    const existingModels = [...new Set(appState.parts.map(p => p.model.toLowerCase()))];
+    if (existingModels.includes(folderName.toLowerCase())) {
+      this.showToast('Questa cartella esiste già', 'error');
+      return;
+    }
+
+    // Create an empty placeholder part to represent the folder
+    // (will be removed when first real part is added)
+    appState.parts.push({
+      id: appState.parts.length > 0 ? Math.max(...appState.parts.map(p => p.id)) + 1 : 1,
+      name: '_FOLDER_',
+      model: folderName,
+      price: 0,
+      stock: 0,
+      minStock: 0
+    });
+
+    this.closeModal('addFolderModal');
+    form.reset();
+    this.selectedFolder = folderName;
+    this.renderPartsPage();
+    this.showToast(`Cartella "${folderName}" creata`, 'success');
+  },
+
+  populateFolderSelect() {
+    const select = document.getElementById('partFolderSelect');
+    if (!select) return;
 
     // Get unique models from parts
     const models = [...new Set(appState.parts.map(part => part.model))].sort();
     
-    // Clear existing options except the first one
-    dropdown.innerHTML = '<option value="">Tutti i modelli</option>';
+    let html = '<option value="">Seleziona cartella...</option>';
     
-    // Add model options
+    // Add current folder as selected if applicable
     models.forEach(model => {
-      const option = document.createElement('option');
-      option.value = model.toLowerCase();
-      option.textContent = model;
-      dropdown.appendChild(option);
+      const selected = this.selectedFolder === model ? 'selected' : '';
+      html += `<option value="${model}" ${selected}>${model}</option>`;
     });
+    
+    select.innerHTML = html;
+  },
+
+  populateModelDropdown() {
+    // Legacy function - now handled by updateFolderList
+    this.updateFolderList();
   },
 
   // Remove the old toggle function as it's no longer needed
@@ -3563,6 +3652,7 @@ ACCESSORI;GLASS;;20,00 €;10 €`;
   },
 
   showAddPartModal() {
+    this.populateFolderSelect();
     this.openModal('addPartModal');
   },
 
@@ -3570,20 +3660,33 @@ ACCESSORI;GLASS;;20,00 €;10 €`;
     const form = document.getElementById('addPartForm');
     const formData = new FormData(form);
 
+    const folderName = formData.get('partFolder') || this.selectedFolder;
+    if (!folderName) {
+      this.showToast('Seleziona una cartella per il ricambio', 'error');
+      return;
+    }
+
+    // Remove placeholder folder item if exists
+    const placeholderIndex = appState.parts.findIndex(p => p.model === folderName && p.name === '_FOLDER_');
+    if (placeholderIndex !== -1) {
+      appState.parts.splice(placeholderIndex, 1);
+    }
+
     const newPart = {
       id: appState.parts.length > 0 ? Math.max(...appState.parts.map(p => p.id)) + 1 : 1,
       name: formData.get('partName'),
-      model: 'Generico',
-      price: parseFloat(formData.get('partPrice')),
-      stock: 0,
-      minStock: 0
+      model: folderName,
+      price: parseFloat(formData.get('partPrice')) || 0,
+      stock: parseInt(formData.get('partStock')) || 0,
+      minStock: parseInt(formData.get('partMinStock')) || 1
     };
 
     appState.parts.push(newPart);
+    this.selectedFolder = folderName;
     this.closeModal('addPartModal');
     form.reset();
     this.renderPartsPage();
-    this.showToast('Ricambio aggiunto', 'success');
+    this.showToast(`Ricambio aggiunto a "${folderName}"`, 'success');
   },
 
   changePartStock(partId, delta) {
