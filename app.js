@@ -1372,12 +1372,6 @@ ACCESSORI;GLASS;;20,00 €;10 €`;
       clientSearch.addEventListener('input', () => this.renderClientsList());
     }
 
-    // Parts model filter
-    const partsModelFilter = document.getElementById('partsModelFilter');
-    if (partsModelFilter) {
-      partsModelFilter.addEventListener('change', () => this.renderPartsPage());
-    }
-
     // Settings form
     const settingsForm = document.getElementById('companySettingsForm');
     if (settingsForm) {
@@ -3629,13 +3623,6 @@ ACCESSORI;GLASS;;20,00 €;10 €`;
     
     select.innerHTML = html;
   },
-
-  populateModelDropdown() {
-    // Legacy function - now handled by updateFolderList
-    this.updateFolderList();
-  },
-
-  // Remove the old toggle function as it's no longer needed
 
   saveSettings() {
     const form = document.getElementById('companySettingsForm');
