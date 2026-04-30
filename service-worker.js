@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fixit-repair-express-cache-v2';
+const CACHE_NAME = 'fixit-repair-express-cache-v3';
 const ASSETS = [
   './',
   './index.html',
