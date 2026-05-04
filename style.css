@@ -347,6 +347,33 @@ body[data-theme="dark"] .card__footer {
   border-top-color: var(--color-border);
 }
 
+/* Dark mode section card fixes */
+body[data-theme="dark"] .section-card {
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+body[data-theme="dark"] .section-card label {
+  color: #f9fafb !important;
+}
+
+body[data-theme="dark"] .section-card .timeline-status,
+body[data-theme="dark"] .section-card .timeline-date {
+  color: var(--color-text);
+}
+
+body[data-theme="dark"] .section-card .quote-table th,
+body[data-theme="dark"] .section-card .quote-table td {
+  color: var(--color-text);
+  border-bottom-color: var(--color-border);
+}
+
+body[data-theme="dark"] .section-card textarea {
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  border-color: var(--color-border);
+}
+
 /* Dark mode colors */
 @media (prefers-color-scheme: dark) {
   :root {
